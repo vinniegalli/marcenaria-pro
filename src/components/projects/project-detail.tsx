@@ -97,7 +97,10 @@ export function ProjectDetail({
   const [addCostOpen, setAddCostOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const imageFiles = project.mediaFiles.filter((f) => f.type !== "video");
 
   const [newItem, setNewItem] = useState({
     name: "",
@@ -486,7 +489,12 @@ export function ProjectDetail({
                     <img
                       src={file.url}
                       alt={file.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover cursor-zoom-in"
+                      onClick={() =>
+                        setLightboxIndex(
+                          imageFiles.findIndex((f) => f.id === file.id),
+                        )
+                      }
                     />
                   )}
                   <button
@@ -507,6 +515,57 @@ export function ProjectDetail({
           )}
         </CardContent>
       </Card>
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && imageFiles.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={() => setLightboxIndex(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white hover:text-gray-300 p-2"
+            onClick={() => setLightboxIndex(null)}
+          >
+            <X className="h-6 w-6" />
+          </button>
+          {imageFiles.length > 1 && (
+            <>
+              <button
+                className="absolute left-4 text-white hover:text-gray-300 p-2 text-3xl leading-none"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex(
+                    (lightboxIndex - 1 + imageFiles.length) % imageFiles.length,
+                  );
+                }}
+              >
+                ‹
+              </button>
+              <button
+                className="absolute right-4 text-white hover:text-gray-300 p-2 text-3xl leading-none"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex((lightboxIndex + 1) % imageFiles.length);
+                }}
+              >
+                ›
+              </button>
+            </>
+          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageFiles[lightboxIndex].url}
+            alt={imageFiles[lightboxIndex].name}
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {imageFiles.length > 1 && (
+            <p className="absolute bottom-4 text-white/60 text-sm">
+              {lightboxIndex + 1} / {imageFiles.length}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Add Cost Item Dialog */}
       <Dialog open={addCostOpen} onOpenChange={setAddCostOpen}>

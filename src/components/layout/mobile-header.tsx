@@ -38,10 +38,8 @@ export function MobileHeader() {
       </div>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger>
-          <Button variant="ghost" size="icon">
-            <Menu className="h-5 w-5" />
-          </Button>
+        <SheetTrigger className="inline-flex items-center justify-center rounded-lg p-2 text-gray-600 hover:bg-gray-100 transition-colors">
+          <Menu className="h-5 w-5" />
         </SheetTrigger>
         <SheetContent side="right" className="w-72 p-0">
           <div className="flex items-center justify-between px-6 py-5 border-b">

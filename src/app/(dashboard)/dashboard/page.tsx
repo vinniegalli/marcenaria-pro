@@ -6,17 +6,47 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, FolderOpen, TrendingUp, Clock } from "lucide-react";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
+import { PeriodFilter } from "@/components/dashboard/period-filter";
+import { Suspense } from "react";
 
-export default async function DashboardPage() {
+function getPeriodRange(periodo: string): { gte: Date; lte: Date } | null {
+  const now = new Date();
+  if (periodo === "mes") {
+    return {
+      gte: new Date(now.getFullYear(), now.getMonth(), 1),
+      lte: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59),
+    };
+  }
+  if (periodo === "ano") {
+    return {
+      gte: new Date(now.getFullYear(), 0, 1),
+      lte: new Date(now.getFullYear(), 11, 31, 23, 59, 59),
+    };
+  }
+  return null;
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ periodo?: string }>;
+}) {
   const session = await getServerSession(authOptions);
   const userId = session!.user.id;
+  const { periodo = "mes" } = await searchParams;
 
-  const [totalClients, totalProjects, projects, recentProjects] =
+  const range = getPeriodRange(periodo);
+  const dateFilter = range ? { gte: range.gte, lte: range.lte } : undefined;
+
+  const [totalClients, totalProjects, periodProjects, recentProjects] =
     await Promise.all([
       prisma.client.count({ where: { userId } }),
       prisma.project.count({ where: { userId } }),
       prisma.project.findMany({
-        where: { userId },
+        where: {
+          userId,
+          ...(dateFilter ? { createdAt: dateFilter } : {}),
+        },
         include: { costItems: { select: { quantity: true, unitPrice: true } } },
       }),
       prisma.project.findMany({
@@ -27,17 +57,26 @@ export default async function DashboardPage() {
       }),
     ]);
 
-  const estimatedRevenue = projects.reduce(
-    (sum: number, p: (typeof projects)[number]) => {
+  const { totalCost, totalRevenue } = periodProjects.reduce(
+    (
+      acc: { totalCost: number; totalRevenue: number },
+      p: (typeof periodProjects)[number],
+    ) => {
       const cost = p.costItems.reduce(
         (s: number, i: (typeof p.costItems)[number]) =>
           s + i.quantity * i.unitPrice,
         0,
       );
-      return sum + cost * (1 + p.marginPercent / 100);
+      const revenue = cost * (1 + p.marginPercent / 100);
+      return {
+        totalCost: acc.totalCost + cost,
+        totalRevenue: acc.totalRevenue + revenue,
+      };
     },
-    0,
+    { totalCost: 0, totalRevenue: 0 },
   );
+
+  const lucro = totalRevenue - totalCost;
 
   const stats = [
     {
@@ -48,15 +87,15 @@ export default async function DashboardPage() {
       bg: "bg-blue-50",
     },
     {
-      label: "Projetos",
-      value: totalProjects,
+      label: periodo === "tudo" ? "Total de projetos" : "Projetos no período",
+      value: periodProjects.length,
       icon: FolderOpen,
       color: "text-green-600",
       bg: "bg-green-50",
     },
     {
-      label: "Faturamento estimado",
-      value: formatCurrency(estimatedRevenue),
+      label: periodo === "tudo" ? "Lucro total" : "Lucro no período",
+      value: formatCurrency(lucro),
       icon: TrendingUp,
       color: "text-amber-600",
       bg: "bg-amber-50",
@@ -65,13 +104,18 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Olá, {session?.user?.name?.split(" ")[0]} 👋
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Aqui está um resumo dos seus projetos
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Olá, {session?.user?.name?.split(" ")[0]} 👋
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Aqui está um resumo dos seus projetos
+          </p>
+        </div>
+        <Suspense>
+          <PeriodFilter current={periodo} />
+        </Suspense>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

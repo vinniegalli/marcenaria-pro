@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { formatCurrency } from "@/lib/utils";
 import { Hammer, Calendar } from "lucide-react";
-import Image from "next/image";
+import { PublicGallery } from "@/components/public/public-gallery";
 
 export default async function PublicClientPage({
   params,
@@ -101,37 +101,7 @@ export default async function PublicClientPage({
               {/* Media Gallery */}
               {project.mediaFiles.length > 0 && (
                 <div className="p-4">
-                  <div className="grid grid-cols-2 gap-2">
-                    {project.mediaFiles.map(
-                      (file: (typeof project.mediaFiles)[number]) => (
-                        <div
-                          key={file.id}
-                          className={`rounded-xl overflow-hidden ${
-                            project.mediaFiles.length === 1 ? "col-span-2" : ""
-                          }`}
-                        >
-                          {file.type === "video" ? (
-                            <video
-                              src={file.url}
-                              controls
-                              className="w-full h-48 object-cover bg-black"
-                              playsInline
-                            />
-                          ) : (
-                            <div className="relative w-full h-48">
-                              <Image
-                                src={file.url}
-                                alt={file.name}
-                                fill
-                                className="object-cover"
-                                sizes="(max-width: 672px) 50vw, 336px"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      ),
-                    )}
-                  </div>
+                  <PublicGallery files={project.mediaFiles} />
                 </div>
               )}
 

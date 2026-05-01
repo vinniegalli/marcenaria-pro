@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: parsed.error.issues[0].message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -26,12 +26,12 @@ export async function POST(req: NextRequest) {
     if (existing) {
       return NextResponse.json(
         { error: "Este email já está em uso" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
     // Generate unique username
-    let baseUsername = slugify(name);
+    const baseUsername = slugify(name);
     let username = baseUsername;
     let counter = 1;
 
@@ -53,7 +53,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(user, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error("[register]", err);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }
