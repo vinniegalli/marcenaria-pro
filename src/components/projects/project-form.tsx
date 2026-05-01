@@ -9,14 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { projectSchema } from "@/lib/validations";
 
-type FormData = {
-  name: string;
-  description?: string;
-  date?: string;
-  marginPercent: number;
-};
+const formSchema = z.object({
+  name: z.string().min(2, "Nome deve ter ao menos 2 caracteres"),
+  description: z.string().optional(),
+  date: z.string().optional(),
+  marginPercent: z.number().min(0).max(1000),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 interface ProjectFormProps {
   clientId: string;
@@ -38,7 +39,7 @@ export function ProjectForm({
     handleSubmit,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: zodResolver(projectSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       marginPercent: 0,
       ...initialData,
@@ -108,7 +109,7 @@ export function ProjectForm({
             step="0.5"
             min="0"
             placeholder="30"
-            {...register("marginPercent")}
+            {...register("marginPercent", { valueAsNumber: true })}
           />
           {errors.marginPercent && (
             <p className="text-sm text-red-500">
