@@ -1,0 +1,166 @@
+import { prisma } from "@/lib/prisma";
+import { notFound } from "next/navigation";
+import { formatCurrency } from "@/lib/utils";
+import { Hammer, Calendar } from "lucide-react";
+import Image from "next/image";
+
+export default async function PublicClientPage({
+  params,
+}: {
+  params: Promise<{ username: string; clientSlug: string }>;
+}) {
+  const { username, clientSlug } = await params;
+
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: { id: true, name: true, phone: true },
+  });
+
+  if (!user) notFound();
+
+  const client = await prisma.client.findUnique({
+    where: { userId_slug: { userId: user.id, slug: clientSlug } },
+    select: { id: true, name: true },
+  });
+
+  if (!client) notFound();
+
+  const projects = await prisma.project.findMany({
+    where: { clientId: client.id, status: "active" },
+    include: {
+      costItems: { select: { quantity: true, unitPrice: true } },
+      mediaFiles: { orderBy: { createdAt: "asc" } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const publicProjects = projects.map((p: (typeof projects)[number]) => {
+    const totalCost = p.costItems.reduce(
+      (s: number, i: (typeof p.costItems)[number]) =>
+        s + i.quantity * i.unitPrice,
+      0,
+    );
+    const finalPrice = totalCost * (1 + p.marginPercent / 100);
+    return { ...p, finalPrice };
+  });
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
+          <div className="bg-amber-500 rounded-lg p-1.5">
+            <Hammer className="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <p className="font-bold text-gray-900 text-sm">{user.name}</p>
+            <p className="text-xs text-gray-500">Marcenaria</p>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-2xl mx-auto px-4 py-8 space-y-8">
+        {/* Client greeting */}
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Olá, <span className="text-amber-600">{client.name}</span>!
+          </h1>
+          <p className="text-gray-500 mt-1 text-sm">
+            Aqui está o resumo do seu projeto
+          </p>
+        </div>
+
+        {publicProjects.length === 0 ? (
+          <div className="text-center py-16 text-gray-500">
+            Nenhum projeto disponível ainda.
+          </div>
+        ) : (
+          publicProjects.map((project: (typeof publicProjects)[number]) => (
+            <div
+              key={project.id}
+              className="bg-white rounded-2xl shadow-sm overflow-hidden"
+            >
+              {/* Project Header */}
+              <div className="p-6 border-b border-gray-100">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {project.name}
+                </h2>
+                {project.description && (
+                  <p className="text-gray-600 mt-2 text-sm leading-relaxed">
+                    {project.description}
+                  </p>
+                )}
+                <div className="flex items-center gap-1 mt-3 text-xs text-gray-400">
+                  <Calendar className="h-3 w-3" />
+                  {new Intl.DateTimeFormat("pt-BR").format(
+                    new Date(project.date),
+                  )}
+                </div>
+              </div>
+
+              {/* Media Gallery */}
+              {project.mediaFiles.length > 0 && (
+                <div className="p-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    {project.mediaFiles.map(
+                      (file: (typeof project.mediaFiles)[number]) => (
+                        <div
+                          key={file.id}
+                          className={`rounded-xl overflow-hidden ${
+                            project.mediaFiles.length === 1 ? "col-span-2" : ""
+                          }`}
+                        >
+                          {file.type === "video" ? (
+                            <video
+                              src={file.url}
+                              controls
+                              className="w-full h-48 object-cover bg-black"
+                              playsInline
+                            />
+                          ) : (
+                            <div className="relative w-full h-48">
+                              <Image
+                                src={file.url}
+                                alt={file.name}
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 672px) 50vw, 336px"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Price */}
+              <div className="p-6 bg-amber-50 border-t border-amber-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-amber-700 font-medium">
+                      Valor do serviço
+                    </p>
+                    <p className="text-3xl font-bold text-amber-900 mt-1">
+                      {formatCurrency(project.finalPrice)}
+                    </p>
+                  </div>
+                  <div className="bg-amber-500 rounded-full p-3">
+                    <Hammer className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+
+        {/* Footer */}
+        <div className="text-center text-xs text-gray-400 pb-4">
+          {user.phone && <p className="mb-1">📞 {user.phone}</p>}
+          <p>Orçamento gerado por MarcenariaPro</p>
+        </div>
+      </main>
+    </div>
+  );
+}
