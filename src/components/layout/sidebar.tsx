@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { LayoutDashboard, Users, Settings, LogOut, Hammer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -15,7 +17,20 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+  }, []);
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 h-full">
@@ -48,17 +63,15 @@ export function Sidebar() {
       <div className="px-3 py-4 border-t border-gray-200">
         <div className="px-3 py-2 mb-2">
           <p className="text-sm font-medium text-gray-900 truncate">
-            {session?.user?.name}
+            {user?.user_metadata?.name ?? user?.email}
           </p>
-          <p className="text-xs text-gray-500 truncate">
-            {session?.user?.email}
-          </p>
+          <p className="text-xs text-gray-500 truncate">{user?.email}</p>
         </div>
         <Button
           variant="ghost"
           size="sm"
           className="w-full justify-start text-gray-600 hover:text-red-600"
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={handleSignOut}
         >
           <LogOut className="h-4 w-4 mr-2" />
           Sair

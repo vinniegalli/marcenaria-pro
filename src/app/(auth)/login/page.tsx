@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { createClient } from "@/lib/supabase/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -35,15 +35,15 @@ export default function LoginPage() {
 
   async function onSubmit(data: FormData) {
     setLoading(true);
-    const result = await signIn("credentials", {
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,
-      redirect: false,
     });
 
     setLoading(false);
 
-    if (result?.error) {
+    if (error) {
       toast.error("Email ou senha incorretos");
       return;
     }

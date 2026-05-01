@@ -9,18 +9,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
+  id        String   @id
   name      String
   email     String   @unique
-  password  String
   username  String   @unique
   phone     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  clients              Client[]
-  projects             Project[]
-  passwordResetTokens  PasswordResetToken[]
+  clients  Client[]
+  projects Project[]
 
   @@index([email])
   @@index([username])
@@ -93,17 +91,4 @@ model MediaFile {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
-}
-
-model PasswordResetToken {
-  id        String   @id @default(cuid())
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([token])
 }

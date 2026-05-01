@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import { ClientDetail } from "@/components/clients/client-detail";
 
@@ -9,8 +8,12 @@ export default async function ClientDetailPage({
 }: {
   params: Promise<{ clientId: string }>;
 }) {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const userId = user.id;
 
   const { clientId } = await params;
 
@@ -27,7 +30,7 @@ export default async function ClientDetailPage({
     },
   });
 
-  if (!client || client.userId !== session.user.id) notFound();
+  if (!client || client.userId !== userId) notFound();
 
   const projectsWithTotals = client.projects.map(
     (p: (typeof client.projects)[number]) => {

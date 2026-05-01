@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import { ProjectDetail } from "@/components/projects/project-detail";
 
@@ -9,8 +8,12 @@ export default async function ProjectDetailPage({
 }: {
   params: Promise<{ clientId: string; projectId: string }>;
 }) {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const userId = user.id;
 
   const { clientId, projectId } = await params;
 
@@ -23,11 +26,7 @@ export default async function ProjectDetailPage({
     },
   });
 
-  if (
-    !project ||
-    project.userId !== session.user.id ||
-    project.clientId !== clientId
-  ) {
+  if (!project || project.userId !== userId || project.clientId !== clientId) {
     notFound();
   }
 
@@ -44,7 +43,11 @@ export default async function ProjectDetailPage({
     }),
   );
 
-  const username = session.user.username;
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { username: true },
+  });
+  const username = dbUser?.username ?? "";
 
   return (
     <ProjectDetail

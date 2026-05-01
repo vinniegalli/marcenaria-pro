@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { changePasswordSchema } from "@/lib/validations";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 
@@ -15,32 +15,46 @@ export async function PATCH(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: parsed.error.issues[0].message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const { currentPassword, newPassword } = parsed.data;
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { password: true },
+    // Verifica senha atual via signInWithPassword
+    const supabase = await createClient();
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user?.email) return unauthorized();
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: userData.user.email,
+      password: currentPassword,
     });
 
-    if (!user) return unauthorized();
-
-    const valid = await bcrypt.compare(currentPassword, user.password);
-    if (!valid) {
+    if (signInError) {
       return NextResponse.json(
         { error: "Senha atual incorreta" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const hashed = await bcrypt.hash(newPassword, 12);
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { password: hashed },
-    });
+    // Atualiza a senha via admin (service role)
+    const adminClient = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+
+    const { error: updateError } = await adminClient.auth.admin.updateUserById(
+      session.user.id,
+      { password: newPassword },
+    );
+
+    if (updateError) {
+      return NextResponse.json(
+        { error: "Erro ao alterar senha" },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({ message: "Senha alterada com sucesso" });
   } catch {

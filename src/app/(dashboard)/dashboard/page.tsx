@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,8 +30,11 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ periodo?: string }>;
 }) {
-  const session = await getServerSession(authOptions);
-  const userId = session!.user.id;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const userId = user!.id;
   const { periodo = "mes" } = await searchParams;
 
   const range = getPeriodRange(periodo);
@@ -107,7 +109,9 @@ export default async function DashboardPage({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Olá, {session?.user?.name?.split(" ")[0]} 👋
+            Olá,{" "}
+            {(user?.user_metadata?.name as string | undefined)?.split(" ")[0]}{" "}
+            👋
           </h1>
           <p className="text-gray-500 mt-1">
             Aqui está um resumo dos seus projetos

@@ -1,5 +1,8 @@
 "use client";
 
+// force-dynamic evita o prerender SSG que causa o bug do Turbopack com useContext
+export const dynamic = "force-dynamic";
+
 export default function GlobalError({
   reset,
 }: {
@@ -9,11 +12,30 @@ export default function GlobalError({
   return (
     <html lang="pt-BR">
       <body>
-        <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-          <h2 className="text-xl font-semibold">Algo deu errado</h2>
+        <div
+          style={{
+            display: "flex",
+            minHeight: "100vh",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "1rem",
+            fontFamily: "sans-serif",
+          }}
+        >
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 600 }}>
+            Algo deu errado
+          </h2>
           <button
             onClick={() => reset()}
-            className="rounded-lg bg-amber-500 px-4 py-2 text-white hover:bg-amber-600"
+            style={{
+              backgroundColor: "#f59e0b",
+              color: "white",
+              border: "none",
+              borderRadius: "0.5rem",
+              padding: "0.5rem 1rem",
+              cursor: "pointer",
+            }}
           >
             Tentar novamente
           </button>

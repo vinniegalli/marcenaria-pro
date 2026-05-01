@@ -1,60 +1,43 @@
-import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { registerSchema } from "@/lib/validations";
+import { createClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const parsed = registerSchema.safeParse(body);
+export async function POST() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0].message },
-        { status: 400 },
-      );
-    }
-
-    const { name, email, password, phone } = parsed.data;
-    const normalizedEmail = email.toLowerCase();
-
-    const existing = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
-
-    if (existing) {
-      return NextResponse.json(
-        { error: "Este email já está em uso" },
-        { status: 409 },
-      );
-    }
-
-    // Generate unique username
-    const baseUsername = slugify(name);
-    let username = baseUsername;
-    let counter = 1;
-
-    while (await prisma.user.findUnique({ where: { username } })) {
-      username = `${baseUsername}${counter++}`;
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email: normalizedEmail,
-        password: hashedPassword,
-        username,
-        phone,
-      },
-      select: { id: true, name: true, email: true, username: true },
-    });
-
-    return NextResponse.json(user, { status: 201 });
-  } catch (err) {
-    console.error("[register]", err);
-    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+  if (error || !user) {
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
+
+  const name: string =
+    user.user_metadata?.name ?? user.email?.split("@")[0] ?? "Usuário";
+  const phone: string | null = user.user_metadata?.phone ?? null;
+
+  // Gera username único baseado no nome
+  let baseUsername = slugify(name) || "user";
+  let username = baseUsername;
+  let counter = 1;
+
+  while (await prisma.user.findUnique({ where: { username } })) {
+    username = `${baseUsername}${counter++}`;
+  }
+
+  const dbUser = await prisma.user.upsert({
+    where: { id: user.id },
+    update: {},
+    create: {
+      id: user.id,
+      name,
+      email: user.email!,
+      username,
+      phone,
+    },
+  });
+
+  return NextResponse.json(dbUser, { status: 201 });
 }

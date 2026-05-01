@@ -18,6 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { forgotPasswordSchema } from "@/lib/validations";
+import { createClient } from "@/lib/supabase/client";
 
 type FormData = z.infer<typeof forgotPasswordSchema>;
 
@@ -36,14 +37,12 @@ export default function ForgotPasswordPage() {
   async function onSubmit(data: FormData) {
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      const supabase = createClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
       });
-      const json = await res.json();
-      if (!res.ok) {
-        toast.error(json.error);
+      if (error) {
+        toast.error("Erro ao enviar email. Tente novamente.");
         return;
       }
       setSent(true);

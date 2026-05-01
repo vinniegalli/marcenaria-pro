@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { createClient } from "@/lib/supabase/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -26,6 +26,7 @@ type FormData = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const {
     register,
@@ -36,40 +37,69 @@ export default function RegisterPage() {
   async function onSubmit(data: FormData) {
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        toast.error(json.error ?? "Erro ao criar conta");
-        return;
-      }
-
-      const result = await signIn("credentials", {
+      const supabase = createClient();
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
-        redirect: false,
+        options: {
+          data: {
+            name: data.name,
+            phone: data.phone ?? null,
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
 
-      if (result?.error) {
-        toast.error(
-          "Conta criada, mas houve um erro ao entrar. Faça login manualmente.",
-        );
-        router.push("/login");
+      if (error) {
+        toast.error(error.message ?? "Erro ao criar conta");
         return;
       }
 
-      toast.success("Conta criada com sucesso!");
-      router.push("/dashboard");
+      if (signUpData.session) {
+        // Confirmação de email desabilitada — sessão ativa imediatamente
+        await fetch("/api/auth/register", { method: "POST" });
+        toast.success("Conta criada com sucesso!");
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        // Confirmação de email habilitada — aguardar clique no link
+        setEmailSent(true);
+      }
     } catch {
       toast.error("Erro ao criar conta. Tente novamente.");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (emailSent) {
+    return (
+      <Card className="shadow-lg">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-2">
+            <div className="bg-amber-500 rounded-xl p-3">
+              <Hammer className="h-7 w-7 text-white" />
+            </div>
+          </div>
+          <CardTitle className="text-2xl">Verifique seu email</CardTitle>
+          <CardDescription>
+            Enviamos um link de confirmação para o seu email. Clique no link
+            para ativar sua conta.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-center text-sm text-gray-600">
+            Já confirmou?{" "}
+            <Link
+              href="/login"
+              className="text-amber-600 hover:underline font-medium"
+            >
+              Entrar
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (

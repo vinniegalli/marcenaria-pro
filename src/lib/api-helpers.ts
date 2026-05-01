@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import type { Session } from "next-auth";
+import { createClient } from "@/lib/supabase/server";
 
-export type AuthSession = Session & {
-  user: { id: string; username: string };
+export type AuthSession = {
+  user: { id: string };
 };
 
 export async function getAuthSession(): Promise<AuthSession | null> {
-  const session = await getServerSession(authOptions);
-  return session as AuthSession | null;
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error || !user) return null;
+  return { user: { id: user.id } };
 }
 
 export function unauthorized() {

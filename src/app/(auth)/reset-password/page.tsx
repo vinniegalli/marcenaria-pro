@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,14 +18,12 @@ import {
 } from "@/components/ui/card";
 import { resetPasswordSchema } from "@/lib/validations";
 import Link from "next/link";
-import { Suspense } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 type FormData = z.infer<typeof resetPasswordSchema>;
 
 function ResetPasswordForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token") ?? "";
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,22 +33,20 @@ function ResetPasswordForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(resetPasswordSchema),
-    defaultValues: { token },
   });
 
   async function onSubmit(data: FormData) {
     setError("");
-    const res = await fetch("/api/auth/reset-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+    const supabase = createClient();
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: data.newPassword,
     });
-    const json = await res.json();
-    if (!res.ok) {
-      setError(json.error ?? "Erro ao redefinir senha");
+    if (updateError) {
+      setError(updateError.message ?? "Erro ao redefinir senha");
       return;
     }
     setSuccess(true);
+    await supabase.auth.signOut();
     setTimeout(() => router.push("/login"), 3000);
   }
 
@@ -76,8 +72,6 @@ function ResetPasswordForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <input type="hidden" {...register("token")} />
-
           <div className="space-y-1.5">
             <Label htmlFor="newPassword">Nova senha</Label>
             <Input
@@ -143,9 +137,7 @@ export default function ResetPasswordPage() {
         </div>
         <span className="text-xl font-bold text-gray-900">MarcenariaPro</span>
       </div>
-      <Suspense>
-        <ResetPasswordForm />
-      </Suspense>
+      <ResetPasswordForm />
     </div>
   );
 }
