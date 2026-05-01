@@ -71,6 +71,8 @@ interface Project {
   costItems: CostItem[];
   mediaFiles: MediaFile[];
   client: { name: string; slug: string; id: string };
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 const CATEGORIES = [
