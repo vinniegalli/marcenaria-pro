@@ -529,7 +529,9 @@ export function ProjectDetail({
               <Label>Categoria</Label>
               <Select
                 value={newItem.category ?? ""}
-                onValueChange={(v) => setNewItem({ ...newItem, category: v })}
+                onValueChange={(v: string) =>
+                  setNewItem({ ...newItem, category: v })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar categoria" />
