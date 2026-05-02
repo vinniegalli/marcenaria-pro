@@ -17,6 +17,8 @@ import {
   Check,
   TrendingUp,
   Package,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,6 +70,7 @@ interface Project {
   clientId: string;
   totalCost: number;
   finalPrice: number;
+  priceVisible: boolean;
   costItems: CostItem[];
   mediaFiles: MediaFile[];
   client: { name: string; slug: string; id: string };
@@ -97,6 +100,7 @@ export function ProjectDetail({
   const [addCostOpen, setAddCostOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [togglingPrice, setTogglingPrice] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -226,6 +230,24 @@ export function ProjectDetail({
     setTimeout(() => setCopied(false), 2000);
   }
 
+  async function handleTogglePrice() {
+    setTogglingPrice(true);
+    const res = await fetch(`/api/projects/${project.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ priceVisible: !project.priceVisible }),
+    });
+    if (res.ok) {
+      await refreshProject();
+      toast.success(
+        !project.priceVisible ? "Preço visível para o cliente" : "Preço ocultado do cliente",
+      );
+    } else {
+      toast.error("Erro ao alterar visibilidade do preço");
+    }
+    setTogglingPrice(false);
+  }
+
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
@@ -269,27 +291,56 @@ export function ProjectDetail({
 
       {/* Public Link */}
       <Card className="border-amber-200 bg-amber-50">
-        <CardContent className="p-4 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-amber-700 mb-1">
-              Link público para o cliente
-            </p>
-            <p className="text-sm text-amber-900 truncate font-mono">
-              {publicUrl}
-            </p>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-amber-700 mb-1">
+                Link público para o cliente
+              </p>
+              <p className="text-sm text-amber-900 truncate font-mono">
+                {publicUrl}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0 border-amber-300 hover:bg-amber-100"
+              onClick={copyPublicUrl}
+            >
+              {copied ? (
+                <Check className="h-4 w-4 text-green-600" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+            </Button>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="shrink-0 border-amber-300 hover:bg-amber-100"
-            onClick={copyPublicUrl}
-          >
-            {copied ? (
-              <Check className="h-4 w-4 text-green-600" />
-            ) : (
-              <Copy className="h-4 w-4" />
-            )}
-          </Button>
+          <div className="flex items-center justify-between pt-1 border-t border-amber-200">
+            <div>
+              <p className="text-xs font-medium text-amber-700">
+                {project.priceVisible ? "Preço visível para o cliente" : "Preço oculto do cliente"}
+              </p>
+              <p className="text-xs text-amber-600 mt-0.5">
+                {project.priceVisible
+                  ? "O cliente pode ver o valor do orçamento"
+                  : "O cliente verá \"Orçamento em andamento\""}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className={`shrink-0 border-amber-300 hover:bg-amber-100 gap-1.5 ${
+                project.priceVisible ? "" : "text-gray-400"
+              }`}
+              onClick={handleTogglePrice}
+              disabled={togglingPrice}
+            >
+              {project.priceVisible ? (
+                <><Eye className="h-4 w-4" /> Ocultar preço</>
+              ) : (
+                <><EyeOff className="h-4 w-4" /> Mostrar preço</>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

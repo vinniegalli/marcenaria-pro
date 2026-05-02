@@ -96,6 +96,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         ...(parsed.data.marginPercent !== undefined && {
           marginPercent: parsed.data.marginPercent,
         }),
+        ...(parsed.data.priceVisible !== undefined && {
+          priceVisible: parsed.data.priceVisible,
+        }),
       },
     });
 

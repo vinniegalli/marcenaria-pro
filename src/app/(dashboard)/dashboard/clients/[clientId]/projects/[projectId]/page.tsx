@@ -57,6 +57,7 @@ export default async function ProjectDetailPage({
         mediaFiles: project.mediaFiles,
         totalCost,
         finalPrice,
+        priceVisible: project.priceVisible,
         date: project.date.toISOString(),
         createdAt: project.createdAt.toISOString(),
         updatedAt: project.updatedAt.toISOString(),

@@ -49,6 +49,7 @@ export const projectSchema = z.object({
   description: z.string().optional(),
   date: z.string().optional(),
   marginPercent: z.coerce.number().min(0).max(1000).default(0),
+  priceVisible: z.boolean().optional(),
 });
 
 export const costItemSchema = z.object({

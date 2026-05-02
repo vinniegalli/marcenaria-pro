@@ -51,6 +51,7 @@ model Project {
   date          DateTime @default(now())
   marginPercent Float    @default(0)
   status        String   @default("active")
+  priceVisible  Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

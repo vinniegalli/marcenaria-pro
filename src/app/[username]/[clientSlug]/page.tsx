@@ -112,9 +112,15 @@ export default async function PublicClientPage({
                     <p className="text-sm text-amber-700 font-medium">
                       Valor do serviço
                     </p>
-                    <p className="text-3xl font-bold text-amber-900 mt-1">
-                      {formatCurrency(project.finalPrice)}
-                    </p>
+                    {project.priceVisible ? (
+                      <p className="text-3xl font-bold text-amber-900 mt-1">
+                        {formatCurrency(project.finalPrice)}
+                      </p>
+                    ) : (
+                      <p className="text-base font-medium text-amber-700 mt-1 italic">
+                        Orçamento em andamento…
+                      </p>
+                    )}
                   </div>
                   <div className="bg-amber-500 rounded-full p-3">
                     <Hammer className="h-6 w-6 text-white" />
