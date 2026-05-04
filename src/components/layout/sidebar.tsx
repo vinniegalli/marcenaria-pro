@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Users, Settings, LogOut, Hammer } from "lucide-react";
+import { LayoutDashboard, Users, Settings, LogOut, Hammer, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
@@ -12,6 +12,7 @@ import type { User } from "@supabase/supabase-js";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/clients", label: "Clientes", icon: Users },
+  { href: "/dashboard/supply-items", label: "Itens de Uso", icon: Package },
   { href: "/dashboard/settings", label: "Configurações", icon: Settings },
 ];
 

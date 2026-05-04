@@ -23,6 +23,16 @@ export default async function ProjectDetailPage({
       costItems: { orderBy: { createdAt: "asc" } },
       mediaFiles: { orderBy: { createdAt: "asc" } },
       client: { select: { name: true, slug: true, id: true } },
+      budgetReview: {
+        include: {
+          itemReviews: {
+            include: {
+              costItem: { select: { id: true, name: true } },
+            },
+            orderBy: { createdAt: "asc" },
+          },
+        },
+      },
     },
   });
 
@@ -61,6 +71,22 @@ export default async function ProjectDetailPage({
         date: project.date.toISOString(),
         createdAt: project.createdAt.toISOString(),
         updatedAt: project.updatedAt.toISOString(),
+        budgetReview: project.budgetReview
+          ? {
+              id: project.budgetReview.id,
+              projectId: project.budgetReview.projectId,
+              status: project.budgetReview.status,
+              sentAt: project.budgetReview.sentAt.toISOString(),
+              submittedAt: project.budgetReview.submittedAt?.toISOString() ?? null,
+              itemReviews: project.budgetReview.itemReviews.map((ir) => ({
+                id: ir.id,
+                costItemId: ir.costItemId,
+                itemStatus: ir.itemStatus as "approved" | "contested",
+                comment: ir.comment,
+                costItem: ir.costItem,
+              })),
+            }
+          : null,
       }}
       username={username}
     />

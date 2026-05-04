@@ -19,6 +19,11 @@ import {
   Package,
   Eye,
   EyeOff,
+  SendHorizonal,
+  ClipboardList,
+  CheckCircle2,
+  XCircle,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,6 +65,23 @@ interface MediaFile {
   storagePath: string;
 }
 
+interface BudgetItemReview {
+  id: string;
+  costItemId: string;
+  itemStatus: string;
+  comment?: string | null;
+  costItem: { id: string; name: string };
+}
+
+interface BudgetReview {
+  id: string;
+  projectId: string;
+  status: string;
+  sentAt: string;
+  submittedAt?: string | null;
+  itemReviews: BudgetItemReview[];
+}
+
 interface Project {
   id: string;
   name: string;
@@ -76,6 +98,7 @@ interface Project {
   client: { name: string; slug: string; id: string };
   createdAt?: string;
   updatedAt?: string;
+  budgetReview?: BudgetReview | null;
 }
 
 const CATEGORIES = [
@@ -98,10 +121,19 @@ export function ProjectDetail({
   const [project, setProject] = useState(initialProject);
   const [editOpen, setEditOpen] = useState(false);
   const [addCostOpen, setAddCostOpen] = useState(false);
+  const [editCostOpen, setEditCostOpen] = useState(false);
+  const [editingCostItem, setEditingCostItem] = useState<CostItem | null>(null);
+  const [editItem, setEditItem] = useState({ name: "", category: "", quantity: "1", unitPrice: "0" });
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [togglingPrice, setTogglingPrice] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [sendingReview, setSendingReview] = useState(false);
+  const [supplySearch, setSupplySearch] = useState("");
+  const [supplySuggestions, setSupplySuggestions] = useState<
+    { id: string; name: string; unitPrice: number }[]
+  >([]);
+  const supplyDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const imageFiles = project.mediaFiles.filter((f) => f.type !== "video");
@@ -162,6 +194,44 @@ export function ProjectDetail({
       await refreshProject();
     } else {
       toast.error("Erro ao remover item");
+    }
+  }
+
+  function openEditCostItem(item: CostItem) {
+    setEditingCostItem(item);
+    setEditItem({
+      name: item.name,
+      category: item.category ?? "",
+      quantity: String(item.quantity),
+      unitPrice: String(item.unitPrice),
+    });
+    setEditCostOpen(true);
+  }
+
+  async function handleSaveEditCostItem() {
+    if (!editingCostItem) return;
+    if (!editItem.name || !editItem.quantity || !editItem.unitPrice) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+    const res = await fetch(`/api/costs/${editingCostItem.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: editItem.name,
+        category: editItem.category || undefined,
+        quantity: parseFloat(editItem.quantity),
+        unitPrice: parseFloat(editItem.unitPrice),
+      }),
+    });
+    if (res.ok) {
+      toast.success("Item atualizado");
+      setEditCostOpen(false);
+      setEditingCostItem(null);
+      await refreshProject();
+    } else {
+      const json = await res.json();
+      toast.error(json.error ?? "Erro ao atualizar item");
     }
   }
 
@@ -259,8 +329,58 @@ export function ProjectDetail({
     setTogglingPrice(false);
   }
 
+  async function handleSendReview() {
+    if (project.costItems.length === 0) {
+      toast.error("Adicione itens de custo antes de enviar para revisão");
+      return;
+    }
+    setSendingReview(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/review`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        toast.success("Orçamento enviado para revisão do cliente!");
+        await refreshProject();
+      } else {
+        const json = await res.json();
+        toast.error(json.error ?? "Erro ao enviar revisão");
+      }
+    } finally {
+      setSendingReview(false);
+    }
+  }
+
+  function handleSupplyNameChange(value: string) {
+    setNewItem({ ...newItem, name: value });
+    setSupplySearch(value);
+    if (supplyDebounceRef.current) clearTimeout(supplyDebounceRef.current);
+    if (!value.trim()) {
+      setSupplySuggestions([]);
+      return;
+    }
+    supplyDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/supply-items?search=${encodeURIComponent(value)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setSupplySuggestions(data.items?.slice(0, 6) ?? []);
+        }
+      } catch {
+        // ignore
+      }
+    }, 250);
+  }
+
+  function applySupplySuggestion(item: { name: string; unitPrice: number }) {
+    setNewItem({ ...newItem, name: item.name, unitPrice: String(item.unitPrice) });
+    setSupplySuggestions([]);
+  }
+
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-start gap-3">
         <Link
@@ -377,8 +497,108 @@ export function ProjectDetail({
               )}
             </Button>
           </div>
+          <div className="flex items-center justify-between pt-1 border-t border-amber-200">
+            <div>
+              <p className="text-xs font-medium text-amber-700">Revisão do orçamento</p>
+              <p className="text-xs text-amber-600 mt-0.5">
+                {project.budgetReview
+                  ? project.budgetReview.status === "submitted"
+                    ? "Cliente respondeu a revisão"
+                    : "Aguardando resposta do cliente"
+                  : "Envie para o cliente revisar item a item"}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0 border-amber-300 hover:bg-amber-100 gap-1.5"
+              onClick={handleSendReview}
+              disabled={sendingReview}
+            >
+              {sendingReview ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <SendHorizonal className="h-4 w-4" />
+              )}
+              {project.budgetReview ? "Reenviar" : "Enviar para revisão"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Budget Review Results */}
+      {project.budgetReview && (
+        <Card
+          className={
+            project.budgetReview.status === "submitted"
+              ? "border-blue-200"
+              : "border-amber-200"
+          }
+        >
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-amber-500" />
+              Revisão do orçamento
+              <span
+                className={`ml-auto text-xs font-normal px-2 py-0.5 rounded-full ${
+                  project.budgetReview.status === "submitted"
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-amber-100 text-amber-700"
+                }`}
+              >
+                {project.budgetReview.status === "submitted"
+                  ? "Revisão recebida"
+                  : "Aguardando resposta"}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {project.budgetReview.status === "pending" ? (
+              <p className="text-sm text-gray-500">
+                O orçamento foi enviado para revisão. Aguardando o cliente responder.
+              </p>
+            ) : project.budgetReview.itemReviews.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                O cliente respondeu mas sem itens registrados.
+              </p>
+            ) : (
+              <div className="divide-y divide-gray-100 rounded-lg border overflow-hidden">
+                {project.budgetReview.itemReviews.map((review) => (
+                  <div
+                    key={review.id}
+                    className="flex items-start gap-3 px-4 py-3 bg-white"
+                  >
+                    {review.itemStatus === "approved" ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900">
+                        {review.costItem.name}
+                      </p>
+                      {review.comment && (
+                        <p className="text-xs text-gray-500 mt-0.5 italic">
+                          "{review.comment}"
+                        </p>
+                      )}
+                    </div>
+                    <span
+                      className={`ml-auto text-xs px-2 py-0.5 rounded-full shrink-0 ${
+                        review.itemStatus === "approved"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {review.itemStatus === "approved" ? "Aprovado" : "Contestado"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Pricing Panel */}
       <Card>
@@ -484,14 +704,24 @@ export function ProjectDetail({
                         {formatCurrency(item.total)}
                       </td>
                       <td className="py-2.5 text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:text-red-500"
-                          onClick={() => handleDeleteCostItem(item.id)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 hover:text-amber-600"
+                            onClick={() => openEditCostItem(item)}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 hover:text-red-500"
+                            onClick={() => handleDeleteCostItem(item.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -663,13 +893,37 @@ export function ProjectDetail({
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Nome do item *</Label>
-              <Input
-                placeholder="Ex: MDF 15mm, Parafuso, Tinta..."
-                value={newItem.name}
-                onChange={(e) =>
-                  setNewItem({ ...newItem, name: e.target.value })
-                }
-              />
+              <div className="relative">
+                <Input
+                  placeholder="Ex: MDF 15mm, Parafuso, Tinta..."
+                  value={newItem.name}
+                  onChange={(e) => handleSupplyNameChange(e.target.value)}
+                  autoComplete="off"
+                />
+                {supplySuggestions.length > 0 && (
+                  <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg overflow-hidden">
+                    {supplySuggestions.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-amber-50 text-left"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          applySupplySuggestion(s);
+                        }}
+                      >
+                        <span>{s.name}</span>
+                        <span className="text-xs text-gray-500 ml-2 shrink-0">
+                          {s.unitPrice.toLocaleString("pt-BR", {
+                            style: "currency",
+                            currency: "BRL",
+                          })}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Categoria</Label>
@@ -731,6 +985,88 @@ export function ProjectDetail({
               onClick={handleAddCostItem}
             >
               Adicionar item
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Cost Item Dialog */}
+      <Dialog open={editCostOpen} onOpenChange={setEditCostOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar item de custo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nome do item *</Label>
+              <Input
+                placeholder="Ex: MDF 15mm, Parafuso, Tinta..."
+                value={editItem.name}
+                onChange={(e) =>
+                  setEditItem({ ...editItem, name: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Categoria</Label>
+              <Select
+                value={editItem.category ?? ""}
+                onValueChange={(v: string | null) =>
+                  setEditItem({ ...editItem, category: v ?? "" })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Quantidade *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editItem.quantity}
+                  onChange={(e) =>
+                    setEditItem({ ...editItem, quantity: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Valor unitário (R$) *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editItem.unitPrice}
+                  onChange={(e) =>
+                    setEditItem({ ...editItem, unitPrice: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3 text-sm">
+              <span className="text-gray-500">Total: </span>
+              <span className="font-bold">
+                {formatCurrency(
+                  (parseFloat(editItem.quantity) || 0) *
+                    (parseFloat(editItem.unitPrice) || 0),
+                )}
+              </span>
+            </div>
+            <Button
+              className="w-full bg-amber-500 hover:bg-amber-600"
+              onClick={handleSaveEditCostItem}
+            >
+              Salvar alterações
             </Button>
           </div>
         </DialogContent>

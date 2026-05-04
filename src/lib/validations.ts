@@ -63,3 +63,9 @@ export const profileSchema = z.object({
   name: z.string().min(2, "Nome deve ter ao menos 2 caracteres"),
   phone: z.string().optional(),
 });
+
+export const supplyItemSchema = z.object({
+  name: z.string().min(1, "Informe o nome do item"),
+  category: z.string().optional(),
+  unitPrice: z.coerce.number().min(0, "Valor não pode ser negativo"),
+});

@@ -30,11 +30,13 @@ export interface ProjectWithDetails {
   marginPercent: number;
   status: string;
   clientId: string;
+  priceVisible: boolean;
   costItems: CostItemData[];
   mediaFiles: MediaFileData[];
   totalCost: number;
   finalPrice: number;
   client?: { name: string; slug: string };
+  budgetReview?: BudgetReviewWithItems | null;
 }
 
 export interface MediaFileData {
@@ -44,4 +46,35 @@ export interface MediaFileData {
   type: string;
   name: string;
   size: number;
+}
+
+export interface SupplyItemData {
+  id: string;
+  name: string;
+  category?: string | null;
+  unitPrice: number;
+  createdAt: string;
+}
+
+export interface BudgetItemReviewData {
+  id: string;
+  costItemId: string;
+  itemStatus: "approved" | "contested";
+  comment?: string | null;
+  costItem: {
+    id: string;
+    name: string;
+    category?: string | null;
+    quantity: number;
+    unitPrice: number;
+  };
+}
+
+export interface BudgetReviewWithItems {
+  id: string;
+  projectId: string;
+  status: "pending" | "submitted";
+  sentAt: string;
+  submittedAt?: string | null;
+  itemReviews: BudgetItemReviewData[];
 }

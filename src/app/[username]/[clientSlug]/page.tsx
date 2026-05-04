@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { formatCurrency } from "@/lib/utils";
 import { Hammer, Calendar } from "lucide-react";
 import { PublicGallery } from "@/components/public/public-gallery";
+import { BudgetReviewForm } from "@/components/public/budget-review-form";
 
 export default async function PublicClientPage({
   params,
@@ -28,8 +29,13 @@ export default async function PublicClientPage({
   const projects = await prisma.project.findMany({
     where: { clientId: client.id, status: "active" },
     include: {
-      costItems: { select: { quantity: true, unitPrice: true } },
+      costItems: {
+        orderBy: { createdAt: "asc" },
+      },
       mediaFiles: { orderBy: { createdAt: "asc" } },
+      budgetReview: {
+        select: { status: true },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -75,60 +81,96 @@ export default async function PublicClientPage({
             Nenhum projeto disponível ainda.
           </div>
         ) : (
-          publicProjects.map((project: (typeof publicProjects)[number]) => (
-            <div
-              key={project.id}
-              className="bg-white rounded-2xl shadow-sm overflow-hidden"
-            >
-              {/* Project Header */}
-              <div className="p-6 border-b border-gray-100">
-                <h2 className="text-xl font-bold text-gray-900">
-                  {project.name}
-                </h2>
-                {project.description && (
-                  <p className="text-gray-600 mt-2 text-sm leading-relaxed">
-                    {project.description}
-                  </p>
-                )}
-                <div className="flex items-center gap-1 mt-3 text-xs text-gray-400">
-                  <Calendar className="h-3 w-3" />
-                  {new Intl.DateTimeFormat("pt-BR").format(
-                    new Date(project.date),
-                  )}
-                </div>
-              </div>
+          publicProjects.map((project: (typeof publicProjects)[number]) => {
+            const reviewStatus = project.budgetReview?.status as
+              | "pending"
+              | "submitted"
+              | undefined;
+            const showReview =
+              project.priceVisible &&
+              (reviewStatus === "pending" || reviewStatus === "submitted");
 
-              {/* Media Gallery */}
-              {project.mediaFiles.length > 0 && (
-                <div className="p-4">
-                  <PublicGallery files={project.mediaFiles} />
-                </div>
-              )}
-
-              {/* Price */}
-              <div className="p-6 bg-amber-50 border-t border-amber-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-amber-700 font-medium">
-                      Valor do serviço
+            return (
+              <div
+                key={project.id}
+                className="bg-white rounded-2xl shadow-sm overflow-hidden"
+              >
+                {/* Project Header */}
+                <div className="p-6 border-b border-gray-100">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {project.name}
+                  </h2>
+                  {project.description && (
+                    <p className="text-gray-600 mt-2 text-sm leading-relaxed">
+                      {project.description}
                     </p>
-                    {project.priceVisible ? (
-                      <p className="text-3xl font-bold text-amber-900 mt-1">
-                        {formatCurrency(project.finalPrice)}
-                      </p>
-                    ) : (
-                      <p className="text-base font-medium text-amber-700 mt-1 italic">
-                        Orçamento em andamento…
-                      </p>
+                  )}
+                  <div className="flex items-center gap-1 mt-3 text-xs text-gray-400">
+                    <Calendar className="h-3 w-3" />
+                    {new Intl.DateTimeFormat("pt-BR").format(
+                      new Date(project.date),
                     )}
                   </div>
-                  <div className="bg-amber-500 rounded-full p-3">
-                    <Hammer className="h-6 w-6 text-white" />
+                </div>
+
+                {/* Media Gallery */}
+                {project.mediaFiles.length > 0 && (
+                  <div className="p-4">
+                    <PublicGallery files={project.mediaFiles} />
+                  </div>
+                )}
+
+                {/* Price */}
+                <div className="p-6 bg-amber-50 border-t border-amber-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-amber-700 font-medium">
+                        Valor do serviço
+                      </p>
+                      {project.priceVisible ? (
+                        <p className="text-3xl font-bold text-amber-900 mt-1">
+                          {formatCurrency(project.finalPrice)}
+                        </p>
+                      ) : (
+                        <p className="text-base font-medium text-amber-700 mt-1 italic">
+                          Orçamento em andamento…
+                        </p>
+                      )}
+                    </div>
+                    <div className="bg-amber-500 rounded-full p-3">
+                      <Hammer className="h-6 w-6 text-white" />
+                    </div>
                   </div>
                 </div>
+
+                {/* Budget Review Section */}
+                {showReview && project.costItems.length > 0 && (
+                  <div className="p-6 border-t border-gray-100">
+                    <h3 className="font-semibold text-gray-900 mb-1">
+                      Revisão do orçamento
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-3">
+                      O marceneiro enviou este orçamento para sua revisão. Confira os itens abaixo.
+                    </p>
+                    <BudgetReviewForm
+                      projectId={project.id}
+                      username={username}
+                      clientSlug={clientSlug}
+                      initialStatus={reviewStatus}
+                      items={project.costItems.map((item) => ({
+                        id: item.id,
+                        name: item.name,
+                        category: item.category,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice,
+                        marginPercent: project.marginPercent,
+                      }))}
+                    />
+                  </div>
+                )}
               </div>
-            </div>
-          ))
+            );
+          })
         )}
 
         {/* Footer */}

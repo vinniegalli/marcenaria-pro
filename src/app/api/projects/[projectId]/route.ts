@@ -41,6 +41,16 @@ export async function GET(_req: NextRequest, { params }: Params) {
       costItems: { orderBy: { createdAt: "asc" } },
       mediaFiles: { orderBy: { createdAt: "asc" } },
       client: { select: { name: true, slug: true } },
+      budgetReview: {
+        include: {
+          itemReviews: {
+            include: {
+              costItem: { select: { id: true, name: true } },
+            },
+            orderBy: { createdAt: "asc" },
+          },
+        },
+      },
     },
   });
 
