@@ -123,7 +123,12 @@ export function ProjectDetail({
   const [addCostOpen, setAddCostOpen] = useState(false);
   const [editCostOpen, setEditCostOpen] = useState(false);
   const [editingCostItem, setEditingCostItem] = useState<CostItem | null>(null);
-  const [editItem, setEditItem] = useState({ name: "", category: "", quantity: "1", unitPrice: "0" });
+  const [editItem, setEditItem] = useState({
+    name: "",
+    category: "",
+    quantity: "1",
+    unitPrice: "0",
+  });
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [togglingPrice, setTogglingPrice] = useState(false);
@@ -362,7 +367,7 @@ export function ProjectDetail({
     supplyDebounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/supply-items?search=${encodeURIComponent(value)}`
+          `/api/supply-items?search=${encodeURIComponent(value)}`,
         );
         if (res.ok) {
           const data = await res.json();
@@ -375,7 +380,11 @@ export function ProjectDetail({
   }
 
   function applySupplySuggestion(item: { name: string; unitPrice: number }) {
-    setNewItem({ ...newItem, name: item.name, unitPrice: String(item.unitPrice) });
+    setNewItem({
+      ...newItem,
+      name: item.name,
+      unitPrice: String(item.unitPrice),
+    });
     setSupplySuggestions([]);
   }
 
@@ -499,7 +508,9 @@ export function ProjectDetail({
           </div>
           <div className="flex items-center justify-between pt-1 border-t border-amber-200">
             <div>
-              <p className="text-xs font-medium text-amber-700">Revisão do orçamento</p>
+              <p className="text-xs font-medium text-amber-700">
+                Revisão do orçamento
+              </p>
               <p className="text-xs text-amber-600 mt-0.5">
                 {project.budgetReview
                   ? project.budgetReview.status === "submitted"
@@ -555,7 +566,8 @@ export function ProjectDetail({
           <CardContent>
             {project.budgetReview.status === "pending" ? (
               <p className="text-sm text-gray-500">
-                O orçamento foi enviado para revisão. Aguardando o cliente responder.
+                O orçamento foi enviado para revisão. Aguardando o cliente
+                responder.
               </p>
             ) : project.budgetReview.itemReviews.length === 0 ? (
               <p className="text-sm text-gray-500">
@@ -590,7 +602,9 @@ export function ProjectDetail({
                           : "bg-red-100 text-red-700"
                       }`}
                     >
-                      {review.itemStatus === "approved" ? "Aprovado" : "Contestado"}
+                      {review.itemStatus === "approved"
+                        ? "Aprovado"
+                        : "Contestado"}
                     </span>
                   </div>
                 ))}
