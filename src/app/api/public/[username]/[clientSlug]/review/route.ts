@@ -7,7 +7,8 @@ const reviewSubmitSchema = z.object({
   items: z.array(
     z.object({
       costItemId: z.string(),
-      itemStatus: z.enum(["approved", "contested"]),
+      itemStatus: z.enum(["approved", "contested", "alternative"]),
+      selectedOption: z.enum(["primary", "alternative"]).default("primary"),
       comment: z.string().optional(),
     }),
   ),
@@ -68,7 +69,21 @@ export async function POST(
       );
     }
 
-    // Upsert each item review
+    // Load all valid costItem IDs that belong to this project
+    // This prevents a malicious client from sending costItemIds from other projects
+    const projectCostItems = await prisma.costItem.findMany({
+      where: { projectId: project.id },
+      select: { id: true },
+    });
+    const validCostItemIds = new Set(projectCostItems.map((c) => c.id));
+
+    for (const item of items) {
+      if (!validCostItemIds.has(item.costItemId)) {
+        return NextResponse.json({ error: "Item inválido" }, { status: 400 });
+      }
+    }
+
+    // Upsert each item review and update CostItem.activeOption
     for (const item of items) {
       await prisma.budgetItemReview.upsert({
         where: {
@@ -81,12 +96,26 @@ export async function POST(
           budgetReviewId: budgetReview.id,
           costItemId: item.costItemId,
           itemStatus: item.itemStatus,
+          selectedOption: item.selectedOption,
           comment: item.comment ?? null,
         },
         update: {
           itemStatus: item.itemStatus,
+          selectedOption: item.selectedOption,
           comment: item.comment ?? null,
         },
+      });
+
+      // Update the CostItem activeOption based on client choice
+      // Contested items keep the primary option active (marceneiro will resolve)
+      const newActiveOption =
+        item.itemStatus !== "contested" && item.selectedOption === "alternative"
+          ? "alternative"
+          : "primary";
+
+      await prisma.costItem.update({
+        where: { id: item.costItemId },
+        data: { activeOption: newActiveOption },
       });
     }
 

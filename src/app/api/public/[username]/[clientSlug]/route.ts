@@ -24,7 +24,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const projects = await prisma.project.findMany({
     where: { clientId: client.id, status: "active" },
     include: {
-      costItems: { select: { quantity: true, unitPrice: true } },
+      costItems: {
+        select: {
+          quantity: true,
+          unitPrice: true,
+          altUnitPrice: true,
+          activeOption: true,
+        },
+      },
       mediaFiles: {
         select: { id: true, url: true, type: true, name: true },
         orderBy: { createdAt: "asc" },
@@ -36,8 +43,13 @@ export async function GET(_req: NextRequest, { params }: Params) {
   // Never expose cost breakdown — only finalPrice
   const publicProjects = projects.map((p: (typeof projects)[number]) => {
     const totalCost = p.costItems.reduce(
-      (sum: number, i: (typeof p.costItems)[number]) =>
-        sum + i.quantity * i.unitPrice,
+      (sum: number, i: (typeof p.costItems)[number]) => {
+        const price =
+          i.activeOption === "alternative" && i.altUnitPrice != null
+            ? i.altUnitPrice
+            : i.unitPrice;
+        return sum + i.quantity * price;
+      },
       0,
     );
     const finalPrice = totalCost * (1 + p.marginPercent / 100);

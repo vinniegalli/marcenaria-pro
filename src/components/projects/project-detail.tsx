@@ -53,6 +53,9 @@ interface CostItem {
   category?: string | null;
   quantity: number;
   unitPrice: number;
+  altName?: string | null;
+  altUnitPrice?: number | null;
+  activeOption?: string;
   total: number;
 }
 
@@ -69,6 +72,7 @@ interface BudgetItemReview {
   id: string;
   costItemId: string;
   itemStatus: string;
+  selectedOption?: string;
   comment?: string | null;
   costItem: { id: string; name: string };
 }
@@ -128,6 +132,8 @@ export function ProjectDetail({
     category: "",
     quantity: "1",
     unitPrice: "0",
+    altName: "",
+    altUnitPrice: "",
   });
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -148,6 +154,8 @@ export function ProjectDetail({
     category: "",
     quantity: "1",
     unitPrice: "0",
+    altName: "",
+    altUnitPrice: "",
   });
 
   const appUrl =
@@ -178,12 +186,23 @@ export function ProjectDetail({
         category: newItem.category || undefined,
         quantity: parseFloat(newItem.quantity),
         unitPrice: parseFloat(newItem.unitPrice),
+        altName: newItem.altName || undefined,
+        altUnitPrice: newItem.altUnitPrice
+          ? parseFloat(newItem.altUnitPrice)
+          : undefined,
       }),
     });
 
     if (res.ok) {
       toast.success("Item adicionado");
-      setNewItem({ name: "", category: "", quantity: "1", unitPrice: "0" });
+      setNewItem({
+        name: "",
+        category: "",
+        quantity: "1",
+        unitPrice: "0",
+        altName: "",
+        altUnitPrice: "",
+      });
       setAddCostOpen(false);
       await refreshProject();
     } else {
@@ -209,6 +228,8 @@ export function ProjectDetail({
       category: item.category ?? "",
       quantity: String(item.quantity),
       unitPrice: String(item.unitPrice),
+      altName: item.altName ?? "",
+      altUnitPrice: item.altUnitPrice != null ? String(item.altUnitPrice) : "",
     });
     setEditCostOpen(true);
   }
@@ -227,6 +248,10 @@ export function ProjectDetail({
         category: editItem.category || undefined,
         quantity: parseFloat(editItem.quantity),
         unitPrice: parseFloat(editItem.unitPrice),
+        altName: editItem.altName || null,
+        altUnitPrice: editItem.altUnitPrice
+          ? parseFloat(editItem.altUnitPrice)
+          : null,
       }),
     });
     if (res.ok) {
@@ -237,17 +262,6 @@ export function ProjectDetail({
     } else {
       const json = await res.json();
       toast.error(json.error ?? "Erro ao atualizar item");
-    }
-  }
-
-  async function handleMarginUpdate(margin: number) {
-    const res = await fetch(`/api/projects/${project.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ marginPercent: margin }),
-    });
-    if (res.ok) {
-      await refreshProject();
     }
   }
 
@@ -575,39 +589,59 @@ export function ProjectDetail({
               </p>
             ) : (
               <div className="divide-y divide-gray-100 rounded-lg border overflow-hidden">
-                {project.budgetReview.itemReviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className="flex items-start gap-3 px-4 py-3 bg-white"
-                  >
-                    {review.itemStatus === "approved" ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
-                        {review.costItem.name}
-                      </p>
-                      {review.comment && (
-                        <p className="text-xs text-gray-500 mt-0.5 italic">
-                          "{review.comment}"
-                        </p>
-                      )}
-                    </div>
-                    <span
-                      className={`ml-auto text-xs px-2 py-0.5 rounded-full shrink-0 ${
-                        review.itemStatus === "approved"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
+                {project.budgetReview.itemReviews.map((review) => {
+                  const costItem = project.costItems.find(
+                    (c) => c.id === review.costItemId,
+                  );
+                  const choseAlternative =
+                    review.selectedOption === "alternative";
+                  return (
+                    <div
+                      key={review.id}
+                      className="flex items-start gap-3 px-4 py-3 bg-white"
                     >
-                      {review.itemStatus === "approved"
-                        ? "Aprovado"
-                        : "Contestado"}
-                    </span>
-                  </div>
-                ))}
+                      {review.itemStatus === "approved" ||
+                      review.itemStatus === "alternative" ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {review.costItem.name}
+                        </p>
+                        {choseAlternative && costItem?.altName && (
+                          <p className="text-xs text-amber-700 mt-0.5">
+                            Cliente escolheu:{" "}
+                            <span className="font-semibold">
+                              {costItem.altName}
+                            </span>
+                          </p>
+                        )}
+                        {review.comment && (
+                          <p className="text-xs text-gray-500 mt-0.5 italic">
+                            &quot;{review.comment}&quot;
+                          </p>
+                        )}
+                      </div>
+                      <span
+                        className={`ml-auto text-xs px-2 py-0.5 rounded-full shrink-0 ${
+                          review.itemStatus === "approved"
+                            ? "bg-green-100 text-green-700"
+                            : review.itemStatus === "alternative"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {review.itemStatus === "approved"
+                          ? "Aprovado"
+                          : review.itemStatus === "alternative"
+                            ? "Op. alternativa"
+                            : "Contestado"}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -632,19 +666,9 @@ export function ProjectDetail({
             </div>
             <div className="bg-amber-50 rounded-lg p-3">
               <p className="text-gray-500 text-xs mb-1">Margem aplicada</p>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  defaultValue={project.marginPercent}
-                  className="h-7 w-20 text-sm p-1"
-                  onBlur={(e) =>
-                    handleMarginUpdate(parseFloat(e.target.value) || 0)
-                  }
-                />
-                <span className="text-gray-500">%</span>
-              </div>
+              <p className="font-bold text-amber-700">
+                {project.marginPercent}%
+              </p>
             </div>
             <div className="bg-green-50 rounded-lg p-3">
               <p className="text-gray-500 text-xs mb-1">Preço final</p>
@@ -699,7 +723,29 @@ export function ProjectDetail({
                       className="border-b last:border-0 hover:bg-gray-50"
                     >
                       <td className="py-2.5 font-medium text-gray-900">
-                        {item.name}
+                        <div>
+                          <span
+                            className={
+                              item.activeOption === "alternative"
+                                ? "line-through text-gray-400"
+                                : ""
+                            }
+                          >
+                            {item.name}
+                          </span>
+                          {item.activeOption === "alternative" &&
+                            item.altName && (
+                              <span className="block text-amber-700 font-semibold text-xs mt-0.5">
+                                ↳ {item.altName} (ativa)
+                              </span>
+                            )}
+                          {item.activeOption !== "alternative" &&
+                            item.altName && (
+                              <span className="block text-gray-400 text-xs mt-0.5">
+                                Alt: {item.altName}
+                              </span>
+                            )}
+                        </div>
                       </td>
                       <td className="py-2.5 text-gray-500">
                         {item.category && (
@@ -712,7 +758,12 @@ export function ProjectDetail({
                         {item.quantity}
                       </td>
                       <td className="py-2.5 text-right text-gray-700">
-                        {formatCurrency(item.unitPrice)}
+                        {formatCurrency(
+                          item.activeOption === "alternative" &&
+                            item.altUnitPrice != null
+                            ? item.altUnitPrice
+                            : item.unitPrice,
+                        )}
                       </td>
                       <td className="py-2.5 text-right font-semibold text-gray-900">
                         {formatCurrency(item.total)}
@@ -994,6 +1045,38 @@ export function ProjectDetail({
                 )}
               </span>
             </div>
+            <div className="border-t pt-4 space-y-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Opção alternativa (opcional)
+              </p>
+              <p className="text-xs text-gray-400">
+                Se o cliente contestar este item, a opção alternativa será
+                oferecida como substituta.
+              </p>
+              <div className="space-y-2">
+                <Label>Nome da alternativa</Label>
+                <Input
+                  placeholder="Ex: Dobraça sem amortecedor"
+                  value={newItem.altName}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, altName: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Valor unitário da alternativa (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0,00"
+                  value={newItem.altUnitPrice}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, altUnitPrice: e.target.value })
+                  }
+                />
+              </div>
+            </div>
             <Button
               className="w-full bg-amber-500 hover:bg-amber-600"
               onClick={handleAddCostItem}
@@ -1075,6 +1158,38 @@ export function ProjectDetail({
                     (parseFloat(editItem.unitPrice) || 0),
                 )}
               </span>
+            </div>
+            <div className="border-t pt-4 space-y-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Opção alternativa (opcional)
+              </p>
+              <p className="text-xs text-gray-400">
+                Se o cliente contestar este item, a opção alternativa será
+                oferecida como substituta.
+              </p>
+              <div className="space-y-2">
+                <Label>Nome da alternativa</Label>
+                <Input
+                  placeholder="Ex: Dobraça sem amortecedor"
+                  value={editItem.altName}
+                  onChange={(e) =>
+                    setEditItem({ ...editItem, altName: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Valor unitário da alternativa (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0,00"
+                  value={editItem.altUnitPrice}
+                  onChange={(e) =>
+                    setEditItem({ ...editItem, altUnitPrice: e.target.value })
+                  }
+                />
+              </div>
             </div>
             <Button
               className="w-full bg-amber-500 hover:bg-amber-600"

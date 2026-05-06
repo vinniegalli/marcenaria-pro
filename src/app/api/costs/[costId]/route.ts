@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { costItemSchema } from "@/lib/validations";
-import { getAuthSession, unauthorized, notFound, forbidden } from "@/lib/api-helpers";
+import {
+  getAuthSession,
+  unauthorized,
+  notFound,
+  forbidden,
+} from "@/lib/api-helpers";
 
 type Params = { params: Promise<{ costId: string }> };
 
@@ -31,7 +36,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: parsed.error.issues[0].message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -39,13 +44,28 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       where: { id: costId },
       data: {
         ...(parsed.data.name && { name: parsed.data.name }),
-        ...(parsed.data.category !== undefined && { category: parsed.data.category || null }),
-        ...(parsed.data.quantity !== undefined && { quantity: parsed.data.quantity }),
-        ...(parsed.data.unitPrice !== undefined && { unitPrice: parsed.data.unitPrice }),
+        ...(parsed.data.category !== undefined && {
+          category: parsed.data.category || null,
+        }),
+        ...(parsed.data.quantity !== undefined && {
+          quantity: parsed.data.quantity,
+        }),
+        ...(parsed.data.unitPrice !== undefined && {
+          unitPrice: parsed.data.unitPrice,
+        }),
+        ...(parsed.data.altName !== undefined && {
+          altName: parsed.data.altName || null,
+        }),
+        ...(parsed.data.altUnitPrice !== undefined && {
+          altUnitPrice: parsed.data.altUnitPrice ?? null,
+        }),
       },
     });
 
-    return NextResponse.json({ ...updated, total: updated.quantity * updated.unitPrice });
+    return NextResponse.json({
+      ...updated,
+      total: updated.quantity * updated.unitPrice,
+    });
   } catch {
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }

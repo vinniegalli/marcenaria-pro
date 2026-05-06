@@ -41,16 +41,27 @@ export default async function ProjectDetailPage({
   }
 
   const totalCost = project.costItems.reduce(
-    (s: number, i: (typeof project.costItems)[number]) =>
-      s + i.quantity * i.unitPrice,
+    (s: number, i: (typeof project.costItems)[number]) => {
+      const price =
+        i.activeOption === "alternative" && i.altUnitPrice != null
+          ? i.altUnitPrice
+          : i.unitPrice;
+      return s + i.quantity * price;
+    },
     0,
   );
   const finalPrice = totalCost * (1 + project.marginPercent / 100);
   const costItemsWithTotal = project.costItems.map(
-    (i: (typeof project.costItems)[number]) => ({
-      ...i,
-      total: i.quantity * i.unitPrice,
-    }),
+    (i: (typeof project.costItems)[number]) => {
+      const effectivePrice =
+        i.activeOption === "alternative" && i.altUnitPrice != null
+          ? i.altUnitPrice
+          : i.unitPrice;
+      return {
+        ...i,
+        total: i.quantity * effectivePrice,
+      };
+    },
   );
 
   const dbUser = await prisma.user.findUnique({
@@ -77,11 +88,16 @@ export default async function ProjectDetailPage({
               projectId: project.budgetReview.projectId,
               status: project.budgetReview.status,
               sentAt: project.budgetReview.sentAt.toISOString(),
-              submittedAt: project.budgetReview.submittedAt?.toISOString() ?? null,
+              submittedAt:
+                project.budgetReview.submittedAt?.toISOString() ?? null,
               itemReviews: project.budgetReview.itemReviews.map((ir) => ({
                 id: ir.id,
                 costItemId: ir.costItemId,
-                itemStatus: ir.itemStatus as "approved" | "contested",
+                itemStatus: ir.itemStatus as
+                  | "approved"
+                  | "contested"
+                  | "alternative",
+                selectedOption: ir.selectedOption as "primary" | "alternative",
                 comment: ir.comment,
                 costItem: ir.costItem,
               })),

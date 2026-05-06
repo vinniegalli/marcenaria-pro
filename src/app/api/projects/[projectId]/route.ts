@@ -18,10 +18,21 @@ async function getOwnedProject(projectId: string, userId: string) {
 }
 
 function calcTotals(
-  costItems: { quantity: number; unitPrice: number }[],
+  costItems: {
+    quantity: number;
+    unitPrice: number;
+    altUnitPrice: number | null;
+    activeOption: string;
+  }[],
   marginPercent: number,
 ) {
-  const totalCost = costItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const totalCost = costItems.reduce((s, i) => {
+    const price =
+      i.activeOption === "alternative" && i.altUnitPrice != null
+        ? i.altUnitPrice
+        : i.unitPrice;
+    return s + i.quantity * price;
+  }, 0);
   const finalPrice = totalCost * (1 + marginPercent / 100);
   return { totalCost, finalPrice };
 }
@@ -63,7 +74,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const costItemsWithTotal = project.costItems.map(
     (i: (typeof project.costItems)[number]) => ({
       ...i,
-      total: i.quantity * i.unitPrice,
+      total:
+        i.quantity *
+        (i.activeOption === "alternative" && i.altUnitPrice != null
+          ? i.altUnitPrice
+          : i.unitPrice),
     }),
   );
 

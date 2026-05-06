@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import {
   CheckCircle2,
   XCircle,
-  ChevronDown,
   Loader2,
   RotateCcw,
 } from "lucide-react";
@@ -19,20 +18,23 @@ interface CostItemPublic {
   category?: string | null;
   quantity: number;
   unitPrice: number;
-  marginPercent: number;
+  altName?: string | null;
+  altUnitPrice?: number | null;
+  activeOption?: string;
 }
 
-interface ItemState {
-  status: "approved" | "contested" | null;
-  comment: string;
-  commentOpen: boolean;
-}
+type ItemDecision =
+  | { type: "approved" }
+  | { type: "alternative" }
+  | { type: "contested"; comment: string }
+  | null;
 
 interface BudgetReviewFormProps {
   projectId: string;
   items: CostItemPublic[];
   username: string;
   clientSlug: string;
+  marginPercent: number;
   initialStatus?: "pending" | "submitted";
 }
 
@@ -40,45 +42,59 @@ function formatCurrency(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function getEffectivePrice(item: CostItemPublic, decision: ItemDecision): number {
+  if (decision?.type === "alternative" && item.altUnitPrice != null) {
+    return item.altUnitPrice;
+  }
+  return item.unitPrice;
+}
+
 export function BudgetReviewForm({
   projectId,
   items,
   username,
   clientSlug,
+  marginPercent,
   initialStatus,
 }: BudgetReviewFormProps) {
   const [submitted, setSubmitted] = useState(initialStatus === "submitted");
   const [loading, setLoading] = useState(false);
-
-  const [itemStates, setItemStates] = useState<Record<string, ItemState>>(() =>
-    Object.fromEntries(
-      items.map((item) => [
-        item.id,
-        { status: null, comment: "", commentOpen: false },
-      ]),
-    ),
+  const [decisions, setDecisions] = useState<Record<string, ItemDecision>>(() =>
+    Object.fromEntries(items.map((item) => [item.id, null])),
+  );
+  const [contestComments, setContestComments] = useState<Record<string, string>>(() =>
+    Object.fromEntries(items.map((item) => [item.id, ""])),
   );
 
-  function setStatus(id: string, status: "approved" | "contested") {
-    setItemStates((prev) => ({
+  function decide(id: string, type: "approved" | "alternative" | "contested") {
+    setDecisions((prev) => ({
       ...prev,
-      [id]: {
-        ...prev[id],
-        status,
-        commentOpen: status === "contested",
-      },
+      [id]: type === "contested"
+        ? { type: "contested", comment: contestComments[id] ?? "" }
+        : { type },
     }));
   }
 
   function setComment(id: string, comment: string) {
-    setItemStates((prev) => ({
-      ...prev,
-      [id]: { ...prev[id], comment },
-    }));
+    setContestComments((prev) => ({ ...prev, [id]: comment }));
+    setDecisions((prev) => {
+      const d = prev[id];
+      if (d?.type === "contested") return { ...prev, [id]: { type: "contested", comment } };
+      return prev;
+    });
   }
 
+  // Estimated price: sum of effective prices * (1 + margin/100)
+  const estimatedPrice = items.reduce((sum, item) => {
+    const d = decisions[item.id];
+    const price = getEffectivePrice(item, d);
+    return sum + item.quantity * price;
+  }, 0) * (1 + marginPercent / 100);
+
+  const answeredCount = Object.values(decisions).filter((d) => d !== null).length;
+
   async function handleSubmit() {
-    const unanswered = items.filter((i) => itemStates[i.id]?.status === null);
+    const unanswered = items.filter((i) => decisions[i.id] === null);
     if (unanswered.length > 0) {
       toast.error(
         `Responda todos os itens antes de enviar (${unanswered.length} pendente${unanswered.length > 1 ? "s" : ""})`,
@@ -90,11 +106,30 @@ export function BudgetReviewForm({
     try {
       const payload = {
         projectId,
-        items: items.map((item) => ({
-          costItemId: item.id,
-          itemStatus: itemStates[item.id].status,
-          comment: itemStates[item.id].comment || undefined,
-        })),
+        items: items.map((item) => {
+          const d = decisions[item.id];
+          const hasAlt = !!item.altName;
+          let itemStatus: "approved" | "contested" | "alternative";
+          let selectedOption: "primary" | "alternative" = "primary";
+
+          if (d?.type === "alternative" && hasAlt) {
+            itemStatus = "alternative";
+            selectedOption = "alternative";
+          } else if (d?.type === "contested") {
+            itemStatus = "contested";
+            selectedOption = "primary";
+          } else {
+            itemStatus = "approved";
+            selectedOption = "primary";
+          }
+
+          return {
+            costItemId: item.id,
+            itemStatus,
+            selectedOption,
+            comment: d?.type === "contested" ? d.comment || undefined : undefined,
+          };
+        }),
       };
 
       const res = await fetch(`/api/public/${username}/${clientSlug}/review`, {
@@ -119,14 +154,8 @@ export function BudgetReviewForm({
 
   function handleReview() {
     setSubmitted(false);
-    setItemStates(
-      Object.fromEntries(
-        items.map((item) => [
-          item.id,
-          { status: null, comment: "", commentOpen: false },
-        ]),
-      ),
-    );
+    setDecisions(Object.fromEntries(items.map((item) => [item.id, null])));
+    setContestComments(Object.fromEntries(items.map((item) => [item.id, ""])));
   }
 
   if (submitted) {
@@ -152,18 +181,26 @@ export function BudgetReviewForm({
 
   return (
     <div className="mt-4 space-y-3">
+      {/* Live price estimate */}
+      <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium text-amber-700">Valor estimado</p>
+          <p className="text-xs text-amber-600 mt-0.5">Atualiza conforme suas escolhas</p>
+        </div>
+        <p className="text-2xl font-bold text-amber-900">{formatCurrency(estimatedPrice)}</p>
+      </div>
+
       <p className="text-sm text-gray-600 font-medium">
-        Revise cada item e aprove ou conteste conforme necessário:
+        Revise cada item e escolha sua preferência:
       </p>
 
       <div className="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">
         {items.map((item) => {
-          const state = itemStates[item.id];
-          const itemTotal =
-            item.quantity * item.unitPrice * (1 + item.marginPercent / 100);
+          const d = decisions[item.id];
+          const hasAlt = !!item.altName;
 
           return (
-            <div key={item.id} className="bg-white px-4 py-3">
+            <div key={item.id} className="bg-white px-4 py-3 space-y-2">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -176,23 +213,59 @@ export function BudgetReviewForm({
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {item.quantity} un. ×{" "}
-                    {formatCurrency(
-                      item.unitPrice * (1 + item.marginPercent / 100),
-                    )}{" "}
-                    ={" "}
-                    <span className="font-semibold text-gray-700">
-                      {formatCurrency(itemTotal)}
-                    </span>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Qtd: {item.quantity}
                   </p>
                 </div>
+              </div>
 
-                <div className="flex gap-1.5 flex-shrink-0">
+              {hasAlt ? (
+                /* Item with alternative option */
+                <div className="space-y-1.5">
+                  <p className="text-xs text-gray-500 font-medium">Escolha uma opção:</p>
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      onClick={() => decide(item.id, "approved")}
+                      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors border text-left ${
+                        d?.type === "approved"
+                          ? "bg-green-500 text-white border-green-500"
+                          : "border-gray-200 text-gray-700 hover:border-green-400 hover:bg-green-50"
+                      }`}
+                    >
+                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      <span className="font-medium">{item.name}</span>
+                    </button>
+                    <button
+                      onClick={() => decide(item.id, "alternative")}
+                      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors border text-left ${
+                        d?.type === "alternative"
+                          ? "bg-amber-500 text-white border-amber-500"
+                          : "border-gray-200 text-gray-700 hover:border-amber-400 hover:bg-amber-50"
+                      }`}
+                    >
+                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      <span className="font-medium">{item.altName}</span>
+                    </button>
+                    <button
+                      onClick={() => decide(item.id, "contested")}
+                      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors border text-left ${
+                        d?.type === "contested"
+                          ? "bg-red-500 text-white border-red-500"
+                          : "border-gray-200 text-gray-600 hover:border-red-400 hover:bg-red-50"
+                      }`}
+                    >
+                      <XCircle className="h-4 w-4 shrink-0" />
+                      <span>Contestar / Outra sugestão</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Item without alternative */
+                <div className="flex gap-1.5">
                   <button
-                    onClick={() => setStatus(item.id, "approved")}
+                    onClick={() => decide(item.id, "approved")}
                     className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors border ${
-                      state.status === "approved"
+                      d?.type === "approved"
                         ? "bg-green-500 text-white border-green-500"
                         : "border-gray-200 text-gray-600 hover:border-green-400 hover:text-green-600"
                     }`}
@@ -201,9 +274,9 @@ export function BudgetReviewForm({
                     Aprovar
                   </button>
                   <button
-                    onClick={() => setStatus(item.id, "contested")}
+                    onClick={() => decide(item.id, "contested")}
                     className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors border ${
-                      state.status === "contested"
+                      d?.type === "contested"
                         ? "bg-red-500 text-white border-red-500"
                         : "border-gray-200 text-gray-600 hover:border-red-400 hover:text-red-600"
                     }`}
@@ -212,18 +285,16 @@ export function BudgetReviewForm({
                     Contestar
                   </button>
                 </div>
-              </div>
+              )}
 
-              {state.status === "contested" && (
-                <div className="mt-2">
-                  <Textarea
-                    placeholder="Explique o motivo (ex: prefiro dobradiça sem amortecimento)"
-                    rows={2}
-                    className="text-sm resize-none"
-                    value={state.comment}
-                    onChange={(e) => setComment(item.id, e.target.value)}
-                  />
-                </div>
+              {d?.type === "contested" && (
+                <Textarea
+                  placeholder="Explique o motivo ou sugira uma alternativa..."
+                  rows={2}
+                  className="text-sm resize-none mt-1"
+                  value={contestComments[item.id]}
+                  onChange={(e) => setComment(item.id, e.target.value)}
+                />
               )}
             </div>
           );
@@ -232,8 +303,7 @@ export function BudgetReviewForm({
 
       <div className="flex items-center justify-between pt-2">
         <p className="text-xs text-gray-500">
-          {Object.values(itemStates).filter((s) => s.status !== null).length} de{" "}
-          {items.length} itens respondidos
+          {answeredCount} de {items.length} itens respondidos
         </p>
         <Button
           onClick={handleSubmit}
@@ -245,5 +315,8 @@ export function BudgetReviewForm({
         </Button>
       </div>
     </div>
+  );
+}
+
   );
 }

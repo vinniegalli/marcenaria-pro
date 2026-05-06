@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { costItemSchema } from "@/lib/validations";
-import { getAuthSession, unauthorized, notFound, forbidden } from "@/lib/api-helpers";
+import {
+  getAuthSession,
+  unauthorized,
+  notFound,
+  forbidden,
+} from "@/lib/api-helpers";
 
 type Params = { params: Promise<{ projectId: string }> };
 
@@ -21,17 +26,29 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: parsed.error.issues[0].message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const { name, category, quantity, unitPrice } = parsed.data;
+    const { name, category, quantity, unitPrice, altName, altUnitPrice } =
+      parsed.data;
 
     const item = await prisma.costItem.create({
-      data: { projectId, name, category: category || null, quantity, unitPrice },
+      data: {
+        projectId,
+        name,
+        category: category || null,
+        quantity,
+        unitPrice,
+        altName: altName || null,
+        altUnitPrice: altUnitPrice ?? null,
+      },
     });
 
-    return NextResponse.json({ ...item, total: item.quantity * item.unitPrice }, { status: 201 });
+    return NextResponse.json(
+      { ...item, total: item.quantity * item.unitPrice },
+      { status: 201 },
+    );
   } catch {
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }

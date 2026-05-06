@@ -42,8 +42,13 @@ export default async function PublicClientPage({
 
   const publicProjects = projects.map((p: (typeof projects)[number]) => {
     const totalCost = p.costItems.reduce(
-      (s: number, i: (typeof p.costItems)[number]) =>
-        s + i.quantity * i.unitPrice,
+      (s: number, i: (typeof p.costItems)[number]) => {
+        const price =
+          i.activeOption === "alternative" && i.altUnitPrice != null
+            ? i.altUnitPrice
+            : i.unitPrice;
+        return s + i.quantity * price;
+      },
       0,
     );
     const finalPrice = totalCost * (1 + p.marginPercent / 100);
@@ -150,20 +155,24 @@ export default async function PublicClientPage({
                       Revisão do orçamento
                     </h3>
                     <p className="text-sm text-gray-500 mb-3">
-                      O marceneiro enviou este orçamento para sua revisão. Confira os itens abaixo.
+                      O marceneiro enviou este orçamento para sua revisão.
+                      Confira os itens abaixo.
                     </p>
                     <BudgetReviewForm
                       projectId={project.id}
                       username={username}
                       clientSlug={clientSlug}
                       initialStatus={reviewStatus}
+                      marginPercent={project.marginPercent}
                       items={project.costItems.map((item) => ({
                         id: item.id,
                         name: item.name,
                         category: item.category,
                         quantity: item.quantity,
                         unitPrice: item.unitPrice,
-                        marginPercent: project.marginPercent,
+                        altName: item.altName ?? null,
+                        altUnitPrice: item.altUnitPrice ?? null,
+                        activeOption: item.activeOption,
                       }))}
                     />
                   </div>

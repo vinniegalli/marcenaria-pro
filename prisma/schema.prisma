@@ -67,14 +67,17 @@ model Project {
 }
 
 model CostItem {
-  id        String   @id @default(cuid())
-  projectId String
-  name      String
-  category  String?
-  quantity  Float
-  unitPrice Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  projectId    String
+  name         String
+  category     String?
+  quantity     Float
+  unitPrice    Float
+  altName      String?
+  altUnitPrice Float?
+  activeOption String   @default("primary")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -118,6 +121,7 @@ model BudgetItemReview {
   budgetReviewId String
   costItemId     String
   itemStatus     String   @default("approved")
+  selectedOption String   @default("primary")
   comment        String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
