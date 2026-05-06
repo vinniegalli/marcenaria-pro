@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  RotateCcw,
-} from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +37,10 @@ function formatCurrency(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function getEffectivePrice(item: CostItemPublic, decision: ItemDecision): number {
+function getEffectivePrice(
+  item: CostItemPublic,
+  decision: ItemDecision,
+): number {
   if (decision?.type === "alternative" && item.altUnitPrice != null) {
     return item.altUnitPrice;
   }
@@ -62,16 +60,17 @@ export function BudgetReviewForm({
   const [decisions, setDecisions] = useState<Record<string, ItemDecision>>(() =>
     Object.fromEntries(items.map((item) => [item.id, null])),
   );
-  const [contestComments, setContestComments] = useState<Record<string, string>>(() =>
-    Object.fromEntries(items.map((item) => [item.id, ""])),
-  );
+  const [contestComments, setContestComments] = useState<
+    Record<string, string>
+  >(() => Object.fromEntries(items.map((item) => [item.id, ""])));
 
   function decide(id: string, type: "approved" | "alternative" | "contested") {
     setDecisions((prev) => ({
       ...prev,
-      [id]: type === "contested"
-        ? { type: "contested", comment: contestComments[id] ?? "" }
-        : { type },
+      [id]:
+        type === "contested"
+          ? { type: "contested", comment: contestComments[id] ?? "" }
+          : { type },
     }));
   }
 
@@ -79,19 +78,24 @@ export function BudgetReviewForm({
     setContestComments((prev) => ({ ...prev, [id]: comment }));
     setDecisions((prev) => {
       const d = prev[id];
-      if (d?.type === "contested") return { ...prev, [id]: { type: "contested", comment } };
+      if (d?.type === "contested")
+        return { ...prev, [id]: { type: "contested", comment } };
       return prev;
     });
   }
 
   // Estimated price: sum of effective prices * (1 + margin/100)
-  const estimatedPrice = items.reduce((sum, item) => {
-    const d = decisions[item.id];
-    const price = getEffectivePrice(item, d);
-    return sum + item.quantity * price;
-  }, 0) * (1 + marginPercent / 100);
+  const estimatedPrice =
+    items.reduce((sum, item) => {
+      const d = decisions[item.id];
+      const price = getEffectivePrice(item, d);
+      return sum + item.quantity * price;
+    }, 0) *
+    (1 + marginPercent / 100);
 
-  const answeredCount = Object.values(decisions).filter((d) => d !== null).length;
+  const answeredCount = Object.values(decisions).filter(
+    (d) => d !== null,
+  ).length;
 
   async function handleSubmit() {
     const unanswered = items.filter((i) => decisions[i.id] === null);
@@ -127,7 +131,8 @@ export function BudgetReviewForm({
             costItemId: item.id,
             itemStatus,
             selectedOption,
-            comment: d?.type === "contested" ? d.comment || undefined : undefined,
+            comment:
+              d?.type === "contested" ? d.comment || undefined : undefined,
           };
         }),
       };
@@ -185,9 +190,13 @@ export function BudgetReviewForm({
       <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex items-center justify-between">
         <div>
           <p className="text-xs font-medium text-amber-700">Valor estimado</p>
-          <p className="text-xs text-amber-600 mt-0.5">Atualiza conforme suas escolhas</p>
+          <p className="text-xs text-amber-600 mt-0.5">
+            Atualiza conforme suas escolhas
+          </p>
         </div>
-        <p className="text-2xl font-bold text-amber-900">{formatCurrency(estimatedPrice)}</p>
+        <p className="text-2xl font-bold text-amber-900">
+          {formatCurrency(estimatedPrice)}
+        </p>
       </div>
 
       <p className="text-sm text-gray-600 font-medium">
@@ -222,7 +231,9 @@ export function BudgetReviewForm({
               {hasAlt ? (
                 /* Item with alternative option */
                 <div className="space-y-1.5">
-                  <p className="text-xs text-gray-500 font-medium">Escolha uma opção:</p>
+                  <p className="text-xs text-gray-500 font-medium">
+                    Escolha uma opção:
+                  </p>
                   <div className="flex flex-col gap-1.5">
                     <button
                       onClick={() => decide(item.id, "approved")}
@@ -315,8 +326,5 @@ export function BudgetReviewForm({
         </Button>
       </div>
     </div>
-  );
-}
-
   );
 }
