@@ -30,8 +30,15 @@ export async function POST(req: NextRequest, { params }: Params) {
       );
     }
 
-    const { name, category, quantity, unitPrice, altName, altUnitPrice } =
-      parsed.data;
+    const {
+      name,
+      category,
+      quantity,
+      unitPrice,
+      altName,
+      altUnitPrice,
+      requiresReview,
+    } = parsed.data;
 
     const item = await prisma.costItem.create({
       data: {
@@ -42,6 +49,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         unitPrice,
         altName: altName || null,
         altUnitPrice: altUnitPrice ?? null,
+        requiresReview: requiresReview ?? true,
       },
     });
 

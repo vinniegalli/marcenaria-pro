@@ -59,6 +59,7 @@ export const costItemSchema = z.object({
   unitPrice: z.coerce.number().min(0, "Valor não pode ser negativo"),
   altName: z.string().optional(),
   altUnitPrice: z.coerce.number().min(0).optional().nullable(),
+  requiresReview: z.boolean().optional(),
 });
 
 export const profileSchema = z.object({

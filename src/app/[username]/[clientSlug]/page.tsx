@@ -149,34 +149,37 @@ export default async function PublicClientPage({
                 </div>
 
                 {/* Budget Review Section */}
-                {showReview && project.costItems.length > 0 && (
-                  <div className="p-6 border-t border-gray-100">
-                    <h3 className="font-semibold text-gray-900 mb-1">
-                      Revisão do orçamento
-                    </h3>
-                    <p className="text-sm text-gray-500 mb-3">
-                      O marceneiro enviou este orçamento para sua revisão.
-                      Confira os itens abaixo.
-                    </p>
-                    <BudgetReviewForm
-                      projectId={project.id}
-                      username={username}
-                      clientSlug={clientSlug}
-                      initialStatus={reviewStatus}
-                      marginPercent={project.marginPercent}
-                      items={project.costItems.map((item) => ({
-                        id: item.id,
-                        name: item.name,
-                        category: item.category,
-                        quantity: item.quantity,
-                        unitPrice: item.unitPrice,
-                        altName: item.altName ?? null,
-                        altUnitPrice: item.altUnitPrice ?? null,
-                        activeOption: item.activeOption,
-                      }))}
-                    />
-                  </div>
-                )}
+                {showReview &&
+                  project.costItems.some((i) => i.requiresReview) && (
+                    <div className="p-6 border-t border-gray-100">
+                      <h3 className="font-semibold text-gray-900 mb-1">
+                        Revisão do orçamento
+                      </h3>
+                      <p className="text-sm text-gray-500 mb-3">
+                        O marceneiro enviou este orçamento para sua revisão.
+                        Confira os itens abaixo.
+                      </p>
+                      <BudgetReviewForm
+                        projectId={project.id}
+                        username={username}
+                        clientSlug={clientSlug}
+                        initialStatus={reviewStatus}
+                        marginPercent={project.marginPercent}
+                        items={project.costItems
+                          .filter((item) => item.requiresReview)
+                          .map((item) => ({
+                            id: item.id,
+                            name: item.name,
+                            category: item.category,
+                            quantity: item.quantity,
+                            unitPrice: item.unitPrice,
+                            altName: item.altName ?? null,
+                            altUnitPrice: item.altUnitPrice ?? null,
+                            activeOption: item.activeOption,
+                          }))}
+                      />
+                    </div>
+                  )}
               </div>
             );
           })

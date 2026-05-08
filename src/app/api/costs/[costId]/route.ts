@@ -59,6 +59,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         ...(parsed.data.altUnitPrice !== undefined && {
           altUnitPrice: parsed.data.altUnitPrice ?? null,
         }),
+        ...(parsed.data.requiresReview !== undefined && {
+          requiresReview: parsed.data.requiresReview,
+        }),
       },
     });
 

@@ -56,6 +56,7 @@ interface CostItem {
   altName?: string | null;
   altUnitPrice?: number | null;
   activeOption?: string;
+  requiresReview: boolean;
   total: number;
 }
 
@@ -134,6 +135,7 @@ export function ProjectDetail({
     unitPrice: "0",
     altName: "",
     altUnitPrice: "",
+    requiresReview: true,
   });
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -156,6 +158,7 @@ export function ProjectDetail({
     unitPrice: "0",
     altName: "",
     altUnitPrice: "",
+    requiresReview: true,
   });
 
   const appUrl =
@@ -190,6 +193,7 @@ export function ProjectDetail({
         altUnitPrice: newItem.altUnitPrice
           ? parseFloat(newItem.altUnitPrice)
           : undefined,
+        requiresReview: newItem.requiresReview,
       }),
     });
 
@@ -202,6 +206,7 @@ export function ProjectDetail({
         unitPrice: "0",
         altName: "",
         altUnitPrice: "",
+        requiresReview: true,
       });
       setAddCostOpen(false);
       await refreshProject();
@@ -230,6 +235,7 @@ export function ProjectDetail({
       unitPrice: String(item.unitPrice),
       altName: item.altName ?? "",
       altUnitPrice: item.altUnitPrice != null ? String(item.altUnitPrice) : "",
+      requiresReview: item.requiresReview,
     });
     setEditCostOpen(true);
   }
@@ -252,6 +258,7 @@ export function ProjectDetail({
         altUnitPrice: editItem.altUnitPrice
           ? parseFloat(editItem.altUnitPrice)
           : null,
+        requiresReview: editItem.requiresReview,
       }),
     });
     if (res.ok) {
@@ -320,7 +327,7 @@ export function ProjectDetail({
   }
 
   function shareWhatsApp() {
-    const msg = `Olá, ${project.client.name}! 👋\n\nSeu projeto *${project.name}* está disponível para visualização. Confira as fotos e o orçamento pelo link:\n${publicUrl}`;
+    const msg = `Olá, ${project.client.name}!  \n\nSeu projeto *${project.name}* está disponível para visualização. Confira as fotos e o orçamento pelo link:\n${publicUrl}`;
     window.open(
       `https://wa.me/?text=${encodeURIComponent(msg)}`,
       "_blank",
@@ -748,11 +755,18 @@ export function ProjectDetail({
                         </div>
                       </td>
                       <td className="py-2.5 text-gray-500">
-                        {item.category && (
-                          <Badge variant="outline" className="text-xs">
-                            {item.category}
-                          </Badge>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {item.category && (
+                            <Badge variant="outline" className="text-xs w-fit">
+                              {item.category}
+                            </Badge>
+                          )}
+                          {!item.requiresReview && (
+                            <span className="text-xs text-gray-400 italic">
+                              não vai p/ revisão
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2.5 text-right text-gray-700">
                         {item.quantity}
@@ -1077,6 +1091,27 @@ export function ProjectDetail({
                 />
               </div>
             </div>
+            <div className="border-t pt-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newItem.requiresReview}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, requiresReview: e.target.checked })
+                  }
+                  className="h-4 w-4 rounded border-gray-300 accent-amber-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-800">
+                    Enviar para aprovação do cliente
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Quando desmarcado, o item conta no valor mas não aparece na
+                    revisão do cliente
+                  </p>
+                </div>
+              </label>
+            </div>
             <Button
               className="w-full bg-amber-500 hover:bg-amber-600"
               onClick={handleAddCostItem}
@@ -1190,6 +1225,30 @@ export function ProjectDetail({
                   }
                 />
               </div>
+            </div>
+            <div className="border-t pt-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editItem.requiresReview}
+                  onChange={(e) =>
+                    setEditItem({
+                      ...editItem,
+                      requiresReview: e.target.checked,
+                    })
+                  }
+                  className="h-4 w-4 rounded border-gray-300 accent-amber-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-800">
+                    Enviar para aprovação do cliente
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Quando desmarcado, o item conta no valor mas não aparece na
+                    revisão do cliente
+                  </p>
+                </div>
+              </label>
             </div>
             <Button
               className="w-full bg-amber-500 hover:bg-amber-600"

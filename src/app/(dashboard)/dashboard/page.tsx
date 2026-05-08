@@ -110,8 +110,9 @@ export default async function DashboardPage({
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             Olá,{" "}
-            {(user?.user_metadata?.name as string | undefined)?.split(" ")[0]}{" "}
-            👋
+            {
+              (user?.user_metadata?.name as string | undefined)?.split(" ")[0]
+            }{" "}
           </h1>
           <p className="text-gray-500 mt-1">
             Aqui está um resumo dos seus projetos
