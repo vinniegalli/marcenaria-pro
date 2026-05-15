@@ -165,7 +165,7 @@ export function ProjectDetail({
     (process.env.NEXT_PUBLIC_APP_URL ?? typeof window !== "undefined")
       ? window.location.origin
       : "";
-  const publicUrl = `${appUrl}/${username}/${project.client.slug}`;
+  const publicUrl = `${appUrl}/p/${project.id}`;
 
   async function refreshProject() {
     const res = await fetch(`/api/projects/${project.id}`);

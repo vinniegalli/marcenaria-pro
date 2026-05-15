@@ -27,9 +27,8 @@ type ItemDecision =
 interface BudgetReviewFormProps {
   projectId: string;
   items: CostItemPublic[];
-  username: string;
-  clientSlug: string;
   marginPercent: number;
+  initialFinalPrice: number;
   initialStatus?: "pending" | "submitted";
 }
 
@@ -50,9 +49,8 @@ function getEffectivePrice(
 export function BudgetReviewForm({
   projectId,
   items,
-  username,
-  clientSlug,
   marginPercent,
+  initialFinalPrice,
   initialStatus,
 }: BudgetReviewFormProps) {
   const [submitted, setSubmitted] = useState(initialStatus === "submitted");
@@ -84,14 +82,16 @@ export function BudgetReviewForm({
     });
   }
 
-  // Estimated price: sum of effective prices * (1 + margin/100)
-  const estimatedPrice =
-    items.reduce((sum, item) => {
-      const d = decisions[item.id];
-      const price = getEffectivePrice(item, d);
-      return sum + item.quantity * price;
-    }, 0) *
-    (1 + marginPercent / 100);
+  // Live price: starts at initialFinalPrice, updates as client makes choices
+  const allUndecided = Object.values(decisions).every((d) => d === null);
+  const estimatedPrice = allUndecided
+    ? initialFinalPrice
+    : items.reduce((sum, item) => {
+        const d = decisions[item.id];
+        const price = getEffectivePrice(item, d);
+        return sum + item.quantity * price;
+      }, 0) *
+      (1 + marginPercent / 100);
 
   const answeredCount = Object.values(decisions).filter(
     (d) => d !== null,
@@ -137,7 +137,7 @@ export function BudgetReviewForm({
         }),
       };
 
-      const res = await fetch(`/api/public/${username}/${clientSlug}/review`, {
+      const res = await fetch(`/api/public/review`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -186,10 +186,10 @@ export function BudgetReviewForm({
 
   return (
     <div className="mt-4 space-y-3">
-      {/* Live price estimate */}
+      {/* Single price display */}
       <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex items-center justify-between">
         <div>
-          <p className="text-xs font-medium text-amber-700">Valor estimado</p>
+          <p className="text-xs font-medium text-amber-700">Valor do serviço</p>
           <p className="text-xs text-amber-600 mt-0.5">
             Atualiza conforme suas escolhas
           </p>
