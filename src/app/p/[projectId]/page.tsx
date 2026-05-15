@@ -25,8 +25,10 @@ export default async function PublicProjectPage({
 
   if (!project) notFound();
 
+  type CostItemRow = (typeof project.costItems)[number];
+
   const totalCost = project.costItems.reduce(
-    (s: number, i: (typeof project.costItems)[number]) => {
+    (s: number, i: CostItemRow) => {
       const price =
         i.activeOption === "alternative" && i.altUnitPrice != null
           ? i.altUnitPrice
@@ -45,7 +47,7 @@ export default async function PublicProjectPage({
   const showReview =
     project.priceVisible &&
     (reviewStatus === "pending" || reviewStatus === "submitted") &&
-    project.costItems.some((i: (typeof project.costItems)[number]) => i.requiresReview);
+    project.costItems.some((i: CostItemRow) => i.requiresReview);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -104,8 +106,8 @@ export default async function PublicProjectPage({
                 marginPercent={project.marginPercent}
                 initialFinalPrice={finalPrice}
                 items={project.costItems
-                  .filter((item: (typeof project.costItems)[number]) => item.requiresReview)
-                  .map((item: (typeof project.costItems)[number]) => ({
+                  .filter((item: CostItemRow) => item.requiresReview)
+                  .map((item: CostItemRow) => ({
                     id: item.id,
                     name: item.name,
                     category: item.category,

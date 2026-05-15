@@ -102,7 +102,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/public/review]", err);
     return NextResponse.json(
       { error: "Erro ao enviar revisão" },
       { status: 500 },
