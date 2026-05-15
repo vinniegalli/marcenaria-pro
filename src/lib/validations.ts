@@ -54,10 +54,10 @@ export const projectSchema = z.object({
 
 export const costItemSchema = z.object({
   name: z.string().min(1, "Informe o nome do item"),
-  category: z.string().optional(),
+  category: z.string().nullable().optional(),
   quantity: z.coerce.number().positive("Quantidade deve ser positiva"),
   unitPrice: z.coerce.number().min(0, "Valor não pode ser negativo"),
-  altName: z.string().optional(),
+  altName: z.string().nullable().optional(),
   altUnitPrice: z.coerce.number().min(0).optional().nullable(),
   requiresReview: z.boolean().optional(),
 });
