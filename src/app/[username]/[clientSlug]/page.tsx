@@ -52,7 +52,16 @@ export default async function PublicClientPage({
       0,
     );
     const finalPrice = totalCost * (1 + p.marginPercent / 100);
-    return { ...p, finalPrice };
+    const fixedItemsCost = p.costItems
+      .filter((i: (typeof p.costItems)[number]) => !i.requiresReview)
+      .reduce((s: number, i: (typeof p.costItems)[number]) => {
+        const price =
+          i.activeOption === "alternative" && i.altUnitPrice != null
+            ? i.altUnitPrice
+            : i.unitPrice;
+        return s + i.quantity * price;
+      }, 0);
+    return { ...p, finalPrice, fixedItemsCost };
   });
 
   return (
@@ -94,6 +103,11 @@ export default async function PublicClientPage({
             const showReview =
               project.priceVisible &&
               (reviewStatus === "pending" || reviewStatus === "submitted");
+            const hasReviewItems = project.costItems.some(
+              (i) => i.requiresReview,
+            );
+            const showStaticPrice =
+              project.priceVisible && !(showReview && hasReviewItems);
 
             return (
               <div
@@ -125,22 +139,22 @@ export default async function PublicClientPage({
                   </div>
                 )}
 
-                {/* Price */}
+                {/* Price — hidden when review is active (price shown inside BudgetReviewForm) */}
                 <div className="p-6 bg-amber-50 border-t border-amber-100">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-amber-700 font-medium">
                         Valor do serviço
                       </p>
-                      {project.priceVisible ? (
+                      {showStaticPrice ? (
                         <p className="text-3xl font-bold text-amber-900 mt-1">
                           {formatCurrency(project.finalPrice)}
                         </p>
-                      ) : (
+                      ) : !project.priceVisible ? (
                         <p className="text-base font-medium text-amber-700 mt-1 italic">
                           Orçamento em andamento…
                         </p>
-                      )}
+                      ) : null}
                     </div>
                     <div className="bg-amber-500 rounded-full p-3">
                       <Hammer className="h-6 w-6 text-white" />
@@ -149,37 +163,35 @@ export default async function PublicClientPage({
                 </div>
 
                 {/* Budget Review Section */}
-                {showReview &&
-                  project.costItems.some((i) => i.requiresReview) && (
-                    <div className="p-6 border-t border-gray-100">
-                      <h3 className="font-semibold text-gray-900 mb-1">
-                        Revisão do orçamento
-                      </h3>
-                      <p className="text-sm text-gray-500 mb-3">
-                        O marceneiro enviou este orçamento para sua revisão.
-                        Confira os itens abaixo.
-                      </p>
-                      <BudgetReviewForm
-                        projectId={project.id}
-                        username={username}
-                        clientSlug={clientSlug}
-                        initialStatus={reviewStatus}
-                        marginPercent={project.marginPercent}
-                        items={project.costItems
-                          .filter((item) => item.requiresReview)
-                          .map((item) => ({
-                            id: item.id,
-                            name: item.name,
-                            category: item.category,
-                            quantity: item.quantity,
-                            unitPrice: item.unitPrice,
-                            altName: item.altName ?? null,
-                            altUnitPrice: item.altUnitPrice ?? null,
-                            activeOption: item.activeOption,
-                          }))}
-                      />
-                    </div>
-                  )}
+                {showReview && hasReviewItems && (
+                  <div className="p-6 border-t border-gray-100">
+                    <h3 className="font-semibold text-gray-900 mb-1">
+                      Revisão do orçamento
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-3">
+                      O marceneiro enviou este orçamento para sua revisão.
+                      Confira os itens abaixo.
+                    </p>
+                    <BudgetReviewForm
+                      projectId={project.id}
+                      initialStatus={reviewStatus}
+                      marginPercent={project.marginPercent}
+                      fixedItemsCost={project.fixedItemsCost}
+                      items={project.costItems
+                        .filter((item) => item.requiresReview)
+                        .map((item) => ({
+                          id: item.id,
+                          name: item.name,
+                          category: item.category,
+                          quantity: item.quantity,
+                          unitPrice: item.unitPrice,
+                          altName: item.altName ?? null,
+                          altUnitPrice: item.altUnitPrice ?? null,
+                          activeOption: item.activeOption,
+                        }))}
+                    />
+                  </div>
+                )}
               </div>
             );
           })

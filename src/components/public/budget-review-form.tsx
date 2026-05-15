@@ -27,9 +27,8 @@ type ItemDecision =
 interface BudgetReviewFormProps {
   projectId: string;
   items: CostItemPublic[];
-  username: string;
-  clientSlug: string;
   marginPercent: number;
+  fixedItemsCost: number;
   initialStatus?: "pending" | "submitted";
 }
 
@@ -50,9 +49,8 @@ function getEffectivePrice(
 export function BudgetReviewForm({
   projectId,
   items,
-  username,
-  clientSlug,
   marginPercent,
+  fixedItemsCost,
   initialStatus,
 }: BudgetReviewFormProps) {
   const [submitted, setSubmitted] = useState(initialStatus === "submitted");
@@ -84,13 +82,14 @@ export function BudgetReviewForm({
     });
   }
 
-  // Estimated price: sum of effective prices * (1 + margin/100)
+  // Total price: (review items based on decisions + fixed items) * margin
   const estimatedPrice =
-    items.reduce((sum, item) => {
+    (items.reduce((sum, item) => {
       const d = decisions[item.id];
       const price = getEffectivePrice(item, d);
       return sum + item.quantity * price;
-    }, 0) *
+    }, 0) +
+      fixedItemsCost) *
     (1 + marginPercent / 100);
 
   const answeredCount = Object.values(decisions).filter(
@@ -109,7 +108,6 @@ export function BudgetReviewForm({
     setLoading(true);
     try {
       const payload = {
-        projectId,
         items: items.map((item) => {
           const d = decisions[item.id];
           const hasAlt = !!item.altName;
@@ -137,7 +135,7 @@ export function BudgetReviewForm({
         }),
       };
 
-      const res = await fetch(`/api/public/${username}/${clientSlug}/review`, {
+      const res = await fetch(`/api/public/projects/${projectId}/review`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -189,7 +187,7 @@ export function BudgetReviewForm({
       {/* Live price estimate */}
       <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex items-center justify-between">
         <div>
-          <p className="text-xs font-medium text-amber-700">Valor estimado</p>
+          <p className="text-xs font-medium text-amber-700">Valor do serviço</p>
           <p className="text-xs text-amber-600 mt-0.5">
             Atualiza conforme suas escolhas
           </p>
