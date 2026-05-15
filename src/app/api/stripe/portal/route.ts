@@ -22,11 +22,16 @@ export async function POST() {
   const rawUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const appUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
 
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer: user.stripeCustomerId,
-    return_url: `${appUrl}/dashboard/settings`,
-    locale: "pt-BR",
-  });
-
-  return NextResponse.json({ url: portalSession.url });
+  try {
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: user.stripeCustomerId,
+      return_url: `${appUrl}/dashboard/settings`,
+      locale: "pt-BR",
+    });
+    return NextResponse.json({ url: portalSession.url });
+  } catch (err) {
+    console.error("[stripe/portal]", err);
+    const message = err instanceof Error ? err.message : "Erro interno";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

@@ -37,6 +37,15 @@ export async function POST(req: NextRequest) {
 
     // Reuse existing Stripe customer or create a new one
     let customerId = user.stripeCustomerId;
+    if (customerId) {
+      // Validate the customer still exists in the current Stripe environment
+      try {
+        await stripe.customers.retrieve(customerId);
+      } catch {
+        // Customer not found (e.g. test-mode ID used in live mode) — create a new one
+        customerId = null;
+      }
+    }
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
