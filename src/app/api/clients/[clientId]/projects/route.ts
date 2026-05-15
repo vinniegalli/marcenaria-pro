@@ -7,6 +7,7 @@ import {
   notFound,
   forbidden,
 } from "@/lib/api-helpers";
+import { getLimit } from "@/lib/plans";
 
 type Params = { params: Promise<{ clientId: string }> };
 
@@ -64,6 +65,24 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
 
     const { name, description, date, marginPercent } = parsed.data;
+
+    // Enforce plan limit
+    const userPlan = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { plan: true },
+    });
+    const limit = getLimit(userPlan?.plan ?? "free", "projects");
+    const count = await prisma.project.count({
+      where: { userId: session.user.id },
+    });
+    if (count >= limit) {
+      return NextResponse.json(
+        {
+          error: `Seu plano permite no máximo ${limit} projeto${limit === 1 ? "" : "s"}. Faça upgrade para adicionar mais.`,
+        },
+        { status: 403 },
+      );
+    }
 
     const project = await prisma.project.create({
       data: {

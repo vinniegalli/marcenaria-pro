@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { clientSchema } from "@/lib/validations";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 import { slugify } from "@/lib/utils";
+import { getLimit } from "@/lib/plans";
 
 export async function GET(req: NextRequest) {
   const session = await getAuthSession();
@@ -50,11 +51,29 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: parsed.error.issues[0].message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const { name, email, phone, notes } = parsed.data;
+
+    // Enforce plan limit
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { plan: true },
+    });
+    const limit = getLimit(user?.plan ?? "free", "clients");
+    const count = await prisma.client.count({
+      where: { userId: session.user.id },
+    });
+    if (count >= limit) {
+      return NextResponse.json(
+        {
+          error: `Seu plano permite no máximo ${limit} cliente${limit === 1 ? "" : "s"}. Faça upgrade para adicionar mais.`,
+        },
+        { status: 403 },
+      );
+    }
 
     // Generate unique slug per user
     let baseSlug = slugify(name);

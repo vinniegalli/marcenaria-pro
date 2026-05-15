@@ -99,15 +99,16 @@ export default async function PublicClientPage({
             const reviewStatus = project.budgetReview?.status as
               | "pending"
               | "submitted"
+              | "confirmed"
               | undefined;
+            // Interactive review form only shown while client hasn't submitted yet
             const showReview =
-              project.priceVisible &&
-              (reviewStatus === "pending" || reviewStatus === "submitted");
+              project.priceVisible && reviewStatus === "pending";
             const hasReviewItems = project.costItems.some(
               (i) => i.requiresReview,
             );
-            const showStaticPrice =
-              project.priceVisible && !(showReview && hasReviewItems);
+            // Static price hidden only while interactive form is shown
+            const showStaticPrice = project.priceVisible && !showReview;
 
             return (
               <div
@@ -139,7 +140,7 @@ export default async function PublicClientPage({
                   </div>
                 )}
 
-                {/* Price — hidden when review is active (price shown inside BudgetReviewForm) */}
+                {/* Price */}
                 <div className="p-6 bg-amber-50 border-t border-amber-100">
                   <div className="flex items-center justify-between">
                     <div>
@@ -160,6 +161,12 @@ export default async function PublicClientPage({
                       <Hammer className="h-6 w-6 text-white" />
                     </div>
                   </div>
+                  {/* Note shown after client submits, waiting for carpenter to confirm */}
+                  {reviewStatus === "submitted" && project.priceVisible && (
+                    <p className="text-xs text-amber-600 mt-2">
+                      Revisão enviada — aguardando confirmação do marceneiro.
+                    </p>
+                  )}
                 </div>
 
                 {/* Budget Review Section */}

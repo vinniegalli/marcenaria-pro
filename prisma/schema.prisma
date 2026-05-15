@@ -9,13 +9,15 @@ datasource db {
 }
 
 model User {
-  id        String   @id
-  name      String
-  email     String   @unique
-  username  String   @unique
-  phone     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id
+  name             String
+  email            String   @unique
+  username         String   @unique
+  phone            String?
+  plan             String   @default("free") // "free" | "starter" | "pro"
+  stripeCustomerId String?  @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   clients      Client[]
   projects     Project[]

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { supplyItemSchema } from "@/lib/validations";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { getLimit } from "@/lib/plans";
 
 export async function GET(req: NextRequest) {
   const session = await getAuthSession();
@@ -43,6 +44,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: parsed.error.issues[0].message },
         { status: 400 },
+      );
+    }
+
+    // Enforce supply items limit
+    const userPlan = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { plan: true },
+    });
+    const limit = getLimit(userPlan?.plan ?? "free", "supplyItems");
+    const count = await prisma.supplyItem.count({
+      where: { userId: session.user.id },
+    });
+    if (count >= limit) {
+      return NextResponse.json(
+        {
+          error: `Seu plano permite no máximo ${limit} ite${limit === 1 ? "m" : "ns"} de insumo. Faça upgrade para adicionar mais.`,
+        },
+        { status: 403 },
       );
     }
 

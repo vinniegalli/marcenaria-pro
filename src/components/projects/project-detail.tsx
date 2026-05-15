@@ -142,6 +142,7 @@ export function ProjectDetail({
   const [togglingPrice, setTogglingPrice] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [sendingReview, setSendingReview] = useState(false);
+  const [confirmingReview, setConfirmingReview] = useState(false);
   const [supplySearch, setSupplySearch] = useState("");
   const [supplySuggestions, setSupplySuggestions] = useState<
     { id: string; name: string; unitPrice: number }[]
@@ -165,7 +166,7 @@ export function ProjectDetail({
     (process.env.NEXT_PUBLIC_APP_URL ?? typeof window !== "undefined")
       ? window.location.origin
       : "";
-  const publicUrl = `${appUrl}/${project.id}`;
+  const publicUrl = `${appUrl}/p/${project.id}`;
 
   async function refreshProject() {
     const res = await fetch(`/api/projects/${project.id}`);
@@ -355,6 +356,24 @@ export function ProjectDetail({
     setTogglingPrice(false);
   }
 
+  async function handleConfirmReview() {
+    setConfirmingReview(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/review`, {
+        method: "PUT",
+      });
+      if (res.ok) {
+        toast.success("Mudanças confirmadas!");
+        await refreshProject();
+      } else {
+        const json = await res.json();
+        toast.error(json.error ?? "Erro ao confirmar mudanças");
+      }
+    } finally {
+      setConfirmingReview(false);
+    }
+  }
+
   async function handleSendReview() {
     if (project.costItems.length === 0) {
       toast.error("Adicione itens de custo antes de enviar para revisão");
@@ -536,7 +555,9 @@ export function ProjectDetail({
                 {project.budgetReview
                   ? project.budgetReview.status === "submitted"
                     ? "Cliente respondeu a revisão"
-                    : "Aguardando resposta do cliente"
+                    : project.budgetReview.status === "confirmed"
+                      ? "Mudanças confirmadas"
+                      : "Aguardando resposta do cliente"
                   : "Envie para o cliente revisar item a item"}
               </p>
             </div>
@@ -564,7 +585,9 @@ export function ProjectDetail({
           className={
             project.budgetReview.status === "submitted"
               ? "border-blue-200"
-              : "border-amber-200"
+              : project.budgetReview.status === "confirmed"
+                ? "border-green-200"
+                : "border-amber-200"
           }
         >
           <CardHeader className="pb-3">
@@ -575,12 +598,16 @@ export function ProjectDetail({
                 className={`ml-auto text-xs font-normal px-2 py-0.5 rounded-full ${
                   project.budgetReview.status === "submitted"
                     ? "bg-blue-100 text-blue-700"
-                    : "bg-amber-100 text-amber-700"
+                    : project.budgetReview.status === "confirmed"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-amber-100 text-amber-700"
                 }`}
               >
                 {project.budgetReview.status === "submitted"
                   ? "Revisão recebida"
-                  : "Aguardando resposta"}
+                  : project.budgetReview.status === "confirmed"
+                    ? "Confirmado"
+                    : "Aguardando resposta"}
               </span>
             </CardTitle>
           </CardHeader>
@@ -595,60 +622,83 @@ export function ProjectDetail({
                 O cliente respondeu mas sem itens registrados.
               </p>
             ) : (
-              <div className="divide-y divide-gray-100 rounded-lg border overflow-hidden">
-                {project.budgetReview.itemReviews.map((review) => {
-                  const costItem = project.costItems.find(
-                    (c) => c.id === review.costItemId,
-                  );
-                  const choseAlternative =
-                    review.selectedOption === "alternative";
-                  return (
-                    <div
-                      key={review.id}
-                      className="flex items-start gap-3 px-4 py-3 bg-white"
-                    >
-                      {review.itemStatus === "approved" ||
-                      review.itemStatus === "alternative" ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          {review.costItem.name}
-                        </p>
-                        {choseAlternative && costItem?.altName && (
-                          <p className="text-xs text-amber-700 mt-0.5">
-                            Cliente escolheu:{" "}
-                            <span className="font-semibold">
-                              {costItem.altName}
-                            </span>
-                          </p>
-                        )}
-                        {review.comment && (
-                          <p className="text-xs text-gray-500 mt-0.5 italic">
-                            &quot;{review.comment}&quot;
-                          </p>
-                        )}
-                      </div>
-                      <span
-                        className={`ml-auto text-xs px-2 py-0.5 rounded-full shrink-0 ${
-                          review.itemStatus === "approved"
-                            ? "bg-green-100 text-green-700"
-                            : review.itemStatus === "alternative"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-red-100 text-red-700"
-                        }`}
+              <div className="space-y-3">
+                <div className="divide-y divide-gray-100 rounded-lg border overflow-hidden">
+                  {project.budgetReview.itemReviews.map((review) => {
+                    const costItem = project.costItems.find(
+                      (c) => c.id === review.costItemId,
+                    );
+                    const choseAlternative =
+                      review.selectedOption === "alternative";
+                    return (
+                      <div
+                        key={review.id}
+                        className="flex items-start gap-3 px-4 py-3 bg-white"
                       >
-                        {review.itemStatus === "approved"
-                          ? "Aprovado"
-                          : review.itemStatus === "alternative"
-                            ? "Op. alternativa"
-                            : "Contestado"}
-                      </span>
-                    </div>
-                  );
-                })}
+                        {review.itemStatus === "approved" ||
+                        review.itemStatus === "alternative" ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-900">
+                            {review.costItem.name}
+                          </p>
+                          {choseAlternative && costItem?.altName && (
+                            <p className="text-xs text-amber-700 mt-0.5">
+                              Cliente escolheu:{" "}
+                              <span className="font-semibold">
+                                {costItem.altName}
+                              </span>
+                            </p>
+                          )}
+                          {review.comment && (
+                            <p className="text-xs text-gray-500 mt-0.5 italic">
+                              &quot;{review.comment}&quot;
+                            </p>
+                          )}
+                        </div>
+                        <span
+                          className={`ml-auto text-xs px-2 py-0.5 rounded-full shrink-0 ${
+                            review.itemStatus === "approved"
+                              ? "bg-green-100 text-green-700"
+                              : review.itemStatus === "alternative"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {review.itemStatus === "approved"
+                            ? "Aprovado"
+                            : review.itemStatus === "alternative"
+                              ? "Op. alternativa"
+                              : "Contestado"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Confirm button — only shown when review is submitted (not yet confirmed) */}
+                {project.budgetReview.status === "submitted" && (
+                  <div className="pt-1">
+                    <Button
+                      className="w-full bg-green-600 hover:bg-green-700 gap-2"
+                      onClick={handleConfirmReview}
+                      disabled={confirmingReview}
+                    >
+                      {confirmingReview ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4" />
+                      )}
+                      Confirmar mudanças do cliente
+                    </Button>
+                    <p className="text-xs text-gray-400 text-center mt-1.5">
+                      O cliente verá o preço atualizado após a confirmação
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

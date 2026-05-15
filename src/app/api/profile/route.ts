@@ -9,7 +9,15 @@ export async function GET(_req: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, name: true, email: true, username: true, phone: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      username: true,
+      phone: true,
+      plan: true,
+      createdAt: true,
+    },
   });
 
   return NextResponse.json(user);
@@ -26,7 +34,7 @@ export async function PATCH(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: parsed.error.issues[0].message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -36,7 +44,13 @@ export async function PATCH(req: NextRequest) {
         name: parsed.data.name,
         phone: parsed.data.phone || null,
       },
-      select: { id: true, name: true, email: true, username: true, phone: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        username: true,
+        phone: true,
+      },
     });
 
     return NextResponse.json(updated);

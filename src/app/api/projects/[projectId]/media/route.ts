@@ -7,6 +7,7 @@ import {
   notFound,
   forbidden,
 } from "@/lib/api-helpers";
+import { getLimit } from "@/lib/plans";
 
 type Params = { params: Promise<{ projectId: string }> };
 
@@ -29,6 +30,22 @@ export async function POST(req: NextRequest, { params }: Params) {
   const project = await prisma.project.findUnique({ where: { id: projectId } });
   if (!project) return notFound("Projeto não encontrado");
   if (project.userId !== session.user.id) return forbidden();
+
+  // Enforce upload limit per project
+  const userPlan = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { plan: true },
+  });
+  const uploadLimit = getLimit(userPlan?.plan ?? "free", "uploads");
+  const uploadCount = await prisma.mediaFile.count({ where: { projectId } });
+  if (uploadCount >= uploadLimit) {
+    return NextResponse.json(
+      {
+        error: `Seu plano permite no máximo ${uploadLimit} upload${uploadLimit === 1 ? "" : "s"} por projeto. Faça upgrade para adicionar mais.`,
+      },
+      { status: 403 },
+    );
+  }
 
   try {
     const formData = await req.formData();
