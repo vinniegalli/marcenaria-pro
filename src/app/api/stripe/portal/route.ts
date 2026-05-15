@@ -19,7 +19,8 @@ export async function POST() {
     );
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const rawUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const appUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
 
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: user.stripeCustomerId,
