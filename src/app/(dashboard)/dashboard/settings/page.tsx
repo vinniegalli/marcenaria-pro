@@ -52,8 +52,9 @@ const PLAN_FEATURE_SUMMARY: Record<PlanId, string[]> = {
   ],
   pro: [
     "Ilimitado tudo",
+    "Perfil público — seja encontrado",
+    "Pré-orçamento pelo seu perfil",
     "Multi-usuário",
-    "Domínio personalizado",
     "Suporte prioritário",
   ],
 };

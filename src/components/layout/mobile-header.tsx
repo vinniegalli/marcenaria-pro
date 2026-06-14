@@ -28,22 +28,30 @@ const baseNavItems = [
   { href: "/dashboard/settings", label: "Configurações", icon: Settings },
 ];
 
-const proNavItems = [
-  { href: "/dashboard/quote-requests", label: "Solicitações", icon: MessageSquare },
-  { href: "/dashboard/profile-public", label: "Perfil Público", icon: Globe },
-];
-
 export function MobileHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [userPlan, setUserPlan] = useState<string>("free");
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    fetch("/api/profile").then((r) => r.json()).then((d) => setUserPlan(d?.plan ?? "free")).catch(() => {});
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then((d) => {
+        const plan = d?.plan ?? "free";
+        setUserPlan(plan);
+        if (plan === "pro") {
+          fetch("/api/quote-requests?pendingOnly=1")
+            .then((r) => r.json())
+            .then((data) => setPendingCount(data?.count ?? 0))
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
   }, []);
 
   async function handleSignOut() {
@@ -96,22 +104,39 @@ export function MobileHeader() {
                 <div className="px-3 pt-3 pb-1">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pro</p>
                 </div>
-                {proNavItems.map(({ href, label, icon: Icon }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={() => setOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                      pathname === href || pathname.startsWith(href)
-                        ? "bg-amber-50 text-amber-700"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {label}
-                  </Link>
-                ))}
+                <Link
+                  href="/dashboard/quote-requests"
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    pathname === "/dashboard/quote-requests" || pathname.startsWith("/dashboard/quote-requests")
+                      ? "bg-amber-50 text-amber-700"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                  )}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  <span className="flex-1">Solicitações</span>
+                  {pendingCount > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+                      {pendingCount}
+                    </span>
+                  )}
+                  <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-semibold">Beta</span>
+                </Link>
+                <Link
+                  href="/dashboard/profile-public"
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    pathname === "/dashboard/profile-public" || pathname.startsWith("/dashboard/profile-public")
+                      ? "bg-amber-50 text-amber-700"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                  )}
+                >
+                  <Globe className="h-4 w-4" />
+                  <span className="flex-1">Perfil Público</span>
+                  <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-semibold">Beta</span>
+                </Link>
               </>
             )}
           </nav>

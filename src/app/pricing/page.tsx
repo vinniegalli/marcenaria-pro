@@ -7,7 +7,6 @@ import {
   Zap,
   Shield,
   HeadphonesIcon,
-  FileText,
   Users,
   Infinity as InfinityIcon,
 } from "lucide-react";
@@ -93,6 +92,8 @@ const plans = [
       { text: "Histórico ilimitado", available: true },
       { text: "Multi-usuário / equipe (até 3)", available: true },
       { text: "Domínio personalizado", available: true },
+      { text: "Perfil público — seja encontrado por clientes", available: true },
+      { text: "Pré-orçamento online pelo seu perfil", available: true },
     ],
   },
 ];
@@ -289,64 +290,6 @@ export default function PricingPage() {
                     {v.title}
                   </p>
                   <p className="text-xs text-gray-500">{v.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Coming soon */}
-        <section className="py-16 px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 text-xs font-medium px-3 py-1.5 rounded-full mb-6">
-              <FileText className="h-3.5 w-3.5" />
-              Em breve
-            </div>
-            <h2 className="text-2xl font-extrabold text-gray-900 mb-4">
-              O que vem por aí
-            </h2>
-            <p className="text-gray-500 mb-8">
-              Estamos construindo as próximas features. Clientes Starter e Pro
-              têm acesso antecipado.
-            </p>
-            <div className="grid sm:grid-cols-2 gap-4 text-left">
-              {[
-                {
-                  title: "Assinatura digital",
-                  desc: "O cliente aprova o orçamento com assinatura direto no link.",
-                },
-                {
-                  title: "Status de etapas",
-                  desc: "Orçamento → Aprovado → Em produção → Entregue.",
-                },
-                {
-                  title: "Portfólio público",
-                  desc: "Galeria pública de projetos concluídos para divulgação.",
-                },
-                {
-                  title: "Integração de pagamento",
-                  desc: "Gere link de pagamento de sinal direto do orçamento.",
-                },
-                {
-                  title: "App mobile PWA",
-                  desc: "Acesse e gerencie seus projetos direto pelo celular.",
-                },
-                {
-                  title: "Relatórios financeiros",
-                  desc: "Receita por mês, ticket médio e margem média.",
-                },
-              ].map((item) => (
-                <div
-                  key={item.title}
-                  className="flex gap-3 bg-gray-50 rounded-xl p-4 border border-gray-100"
-                >
-                  <CheckCircle2 className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="font-semibold text-gray-800 text-sm">
-                      {item.title}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
-                  </div>
                 </div>
               ))}
             </div>

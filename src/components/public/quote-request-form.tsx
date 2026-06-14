@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CheckCircle2, Upload, X } from "lucide-react";
+import { CheckCircle2, Upload, X, Link2 } from "lucide-react";
 
 const LOCATIONS = [
   { value: "cozinha", label: "Cozinha" },
@@ -27,6 +28,7 @@ const DEADLINES = [
 
 export function QuoteRequestForm({ username }: { username: string }) {
   const [submitted, setSubmitted] = useState(false);
+  const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -87,6 +89,7 @@ export function QuoteRequestForm({ username }: { username: string }) {
         });
       }
 
+      setSubmittedId(quoteRequestId);
       setSubmitted(true);
     } catch {
       toast.error("Erro ao enviar solicitação");
@@ -95,16 +98,35 @@ export function QuoteRequestForm({ username }: { username: string }) {
     }
   }
 
-  if (submitted) {
+  if (submitted && submittedId) {
+    const trackingUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/solicitacao/${submittedId}`;
     return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 className="h-8 w-8 text-green-600" />
+      <div className="py-8 space-y-6">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="h-8 w-8 text-green-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Solicitação enviada!</h2>
+          <p className="text-gray-500 text-sm max-w-xs mx-auto">
+            O marceneiro receberá sua solicitação e entrará em contato com um pré-orçamento em breve.
+          </p>
         </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Solicitação enviada!</h2>
-        <p className="text-gray-500 text-sm max-w-xs mx-auto">
-          O marceneiro receberá sua solicitação e entrará em contato com um pré-orçamento em breve.
-        </p>
+
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Link2 className="h-4 w-4 text-amber-600" />
+            <p className="text-sm font-semibold text-amber-800">Guarde este link</p>
+          </div>
+          <p className="text-xs text-amber-700 mb-3">
+            Quando o marceneiro responder, você verá o resultado do orçamento aqui:
+          </p>
+          <Link
+            href={`/solicitacao/${submittedId}`}
+            className="block w-full text-center bg-white border border-amber-300 text-amber-700 font-medium text-sm py-2.5 px-4 rounded-lg hover:bg-amber-50 transition-colors break-all"
+          >
+            {trackingUrl}
+          </Link>
+        </div>
       </div>
     );
   }

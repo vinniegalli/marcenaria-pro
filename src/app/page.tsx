@@ -337,10 +337,11 @@ export default async function Home() {
                   "Uploads ilimitados",
                   "Revisões ilimitadas",
                   "Tudo do Starter",
+                  "Perfil público — seja encontrado",
+                  "Pré-orçamento pelo seu perfil",
                   "Multi-usuário / equipe",
                   "Domínio personalizado",
                   "Suporte prioritário",
-                  "Histórico ilimitado",
                 ].map((f) => (
                   <li key={f} className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />

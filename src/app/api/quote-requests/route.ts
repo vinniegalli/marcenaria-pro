@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   const session = await getAuthSession();
   if (!session) return unauthorized();
 
@@ -16,6 +16,15 @@ export async function GET(_req: NextRequest) {
       { error: "Disponível apenas no plano Pro" },
       { status: 403 },
     );
+  }
+
+  // ?pendingOnly=1 returns just the count of pending requests
+  const pendingOnly = req.nextUrl.searchParams.get("pendingOnly");
+  if (pendingOnly) {
+    const count = await prisma.quoteRequest.count({
+      where: { carpenterId: session.user.id, status: "pending" },
+    });
+    return NextResponse.json({ count });
   }
 
   const requests = await prisma.quoteRequest.findMany({
