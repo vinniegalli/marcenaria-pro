@@ -7,6 +7,7 @@
 ## O que é
 
 SaaS B2B para marceneiros e pequenas marcenarias brasileiras. Permite:
+
 - Gestão de clientes e projetos
 - Orçamentos com itens de custo e margem de lucro
 - Link público para o cliente visualizar o orçamento
@@ -25,31 +26,31 @@ SaaS B2B para marceneiros e pequenas marcenarias brasileiras. Permite:
 
 ## Stack
 
-| Camada | Tech |
-|--------|------|
-| Framework | Next.js 16.2.4 (App Router) |
-| UI | React 19, Tailwind CSS 4, Shadcn/UI, Lucide |
-| Auth | Supabase Auth (email/password) |
-| Banco | PostgreSQL via Supabase + Prisma 6 ORM |
-| Storage | Supabase Storage (fotos/vídeos) |
-| Pagamentos | Stripe v22 (checkout + webhook + billing portal) |
-| Email | Resend (opcional — graceful fallback sem API key) |
-| Data fetch | SWR |
-| Forms | React Hook Form + Zod |
-| Deploy | Vercel (git integration via GitHub) |
+| Camada     | Tech                                              |
+| ---------- | ------------------------------------------------- |
+| Framework  | Next.js 16.2.4 (App Router)                       |
+| UI         | React 19, Tailwind CSS 4, Shadcn/UI, Lucide       |
+| Auth       | Supabase Auth (email/password)                    |
+| Banco      | PostgreSQL via Supabase + Prisma 6 ORM            |
+| Storage    | Supabase Storage (fotos/vídeos)                   |
+| Pagamentos | Stripe v22 (checkout + webhook + billing portal)  |
+| Email      | Resend (opcional — graceful fallback sem API key) |
+| Data fetch | SWR                                               |
+| Forms      | React Hook Form + Zod                             |
+| Deploy     | Vercel (git integration via GitHub)               |
 
 ---
 
 ## Planos e limites
 
-| Feature | Free | Starter (R$49/mês) | Pro (R$129/mês) |
-|---------|------|--------------------|-----------------|
-| Clientes | 2 | 15 | ∞ |
-| Projetos | 3 | 30 | ∞ |
-| Uploads/projeto | 3 | 20 | ∞ |
-| Revisões | 1 | ∞ | ∞ |
-| Supply items | 10 | ∞ | ∞ |
-| Export PDF | ❌ | ✅ | ✅ |
+| Feature         | Free | Starter (R$49/mês) | Pro (R$129/mês) |
+| --------------- | ---- | ------------------ | --------------- |
+| Clientes        | 2    | 15                 | ∞               |
+| Projetos        | 3    | 30                 | ∞               |
+| Uploads/projeto | 3    | 20                 | ∞               |
+| Revisões        | 1    | ∞                  | ∞               |
+| Supply items    | 10   | ∞                  | ∞               |
+| Export PDF      | ❌   | ✅                 | ✅              |
 
 Limites em `src/lib/plans.ts`. Enforcement nas API routes com HTTP 403.
 
@@ -216,6 +217,7 @@ git push origin main   # dispara deploy automático no Vercel
 ```
 
 Para configurar env vars de produção:
+
 ```bash
 vercel env add RESEND_API_KEY production
 vercel env add STRIPE_SECRET_KEY production
@@ -238,3 +240,56 @@ Ou pela dashboard: https://vercel.com/vinniegallis-projects/marcenaria-pro/setti
 - [ ] Configurar `RESEND_API_KEY` e verificar domínio no Resend
 - [ ] Atualizar `NEXT_PUBLIC_APP_URL` para o domínio de produção
 - [ ] Verificar `DATABASE_URL` e `DIRECT_URL` apontando para prod
+
+---
+
+## Comandos de admin (Supabase SQL Editor)
+
+Acesse: **Supabase Dashboard → SQL Editor**
+
+### Ajustar plano de um usuário
+
+```sql
+-- Promover para Pro (para testes ou admin)
+UPDATE "User" SET plan = 'pro' WHERE email = 'vinniegalli@gmail.com';
+
+-- Promover para Starter
+UPDATE "User" SET plan = 'starter' WHERE email = 'vinniegalli@gmail.com';
+
+-- Voltar para Free
+UPDATE "User" SET plan = 'free' WHERE email = 'vinniegalli@gmail.com';
+```
+
+### Verificar usuário
+
+```sql
+SELECT id, email, name, plan, "stripeCustomerId", "createdAt"
+FROM "User"
+WHERE email = 'vinniegalli@gmail.com';
+```
+
+### Listar todos os usuários e planos
+
+```sql
+SELECT email, name, plan, "createdAt"
+FROM "User"
+ORDER BY "createdAt" DESC;
+```
+
+### Ver projetos de um usuário
+
+```sql
+SELECT p.name, p.status, c.name AS cliente, p."createdAt"
+FROM "Project" p
+JOIN "Client" c ON p."clientId" = c.id
+JOIN "User" u ON p."userId" = u.id
+WHERE u.email = 'vinniegalli@gmail.com'
+ORDER BY p."createdAt" DESC;
+```
+
+### Limpar dados de teste
+
+```sql
+-- Remove todos os projetos/clientes de um usuário de teste
+DELETE FROM "Client" WHERE "userId" = (SELECT id FROM "User" WHERE email = 'teste@exemplo.com');
+```
