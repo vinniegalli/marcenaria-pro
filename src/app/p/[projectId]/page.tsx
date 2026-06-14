@@ -116,21 +116,16 @@ export default async function PublicProjectPage({
                   <th style={{ textAlign: "left", padding: "8px 12px", borderBottom: "1px solid #e5e7eb", fontWeight: 600, color: "#374151" }}>Item</th>
                   <th style={{ textAlign: "left", padding: "8px 12px", borderBottom: "1px solid #e5e7eb", fontWeight: 600, color: "#374151" }}>Categoria</th>
                   <th style={{ textAlign: "right", padding: "8px 12px", borderBottom: "1px solid #e5e7eb", fontWeight: 600, color: "#374151" }}>Qtd</th>
-                  <th style={{ textAlign: "right", padding: "8px 12px", borderBottom: "1px solid #e5e7eb", fontWeight: 600, color: "#374151" }}>Unitário</th>
-                  <th style={{ textAlign: "right", padding: "8px 12px", borderBottom: "1px solid #e5e7eb", fontWeight: 600, color: "#374151" }}>Total</th>
                 </tr>
               </thead>
               <tbody>
                 {printItemsIndexed.map(({ item, idx }) => {
-                  const effectivePrice = item.activeOption === "alternative" && item.altUnitPrice != null ? item.altUnitPrice : item.unitPrice;
                   const effectiveName = item.activeOption === "alternative" && item.altName ? item.altName : item.name;
                   return (
                     <tr key={item.id} style={{ background: idx % 2 === 0 ? "#fff" : "#f9fafb" }}>
                       <td style={{ padding: "8px 12px", borderBottom: "1px solid #f3f4f6" }}>{effectiveName}</td>
                       <td style={{ padding: "8px 12px", borderBottom: "1px solid #f3f4f6", color: "#6b7280" }}>{item.category ?? "—"}</td>
                       <td style={{ padding: "8px 12px", borderBottom: "1px solid #f3f4f6", textAlign: "right" }}>{item.quantity}</td>
-                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #f3f4f6", textAlign: "right" }}>{formatCurrency(effectivePrice)}</td>
-                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #f3f4f6", textAlign: "right", fontWeight: 600 }}>{formatCurrency(item.quantity * effectivePrice)}</td>
                     </tr>
                   );
                 })}
