@@ -64,6 +64,10 @@ export default async function PublicProjectPage({
   const showStaticPrice = project.priceVisible && !showReview;
 
   if (isPrint) {
+    // Only items the client was shown — internal costs (requiresReview=false) are excluded
+    const printItems = project.costItems.filter((i) => i.requiresReview);
+    const printItemsIndexed = printItems.map((item, idx) => ({ item, idx }));
+
     return (
       <>
         <PrintTrigger />
@@ -103,7 +107,7 @@ export default async function PublicProjectPage({
             {project.description && <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>{project.description}</p>}
           </div>
 
-          {/* Cost Items Table */}
+          {/* Cost Items Table — only requiresReview items */}
           <div style={{ marginBottom: 24 }}>
             <p style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Itens do orçamento</p>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -117,7 +121,7 @@ export default async function PublicProjectPage({
                 </tr>
               </thead>
               <tbody>
-                {project.costItems.map((item, idx) => {
+                {printItemsIndexed.map(({ item, idx }) => {
                   const effectivePrice = item.activeOption === "alternative" && item.altUnitPrice != null ? item.altUnitPrice : item.unitPrice;
                   const effectiveName = item.activeOption === "alternative" && item.altName ? item.altName : item.name;
                   return (
@@ -134,17 +138,9 @@ export default async function PublicProjectPage({
             </table>
           </div>
 
-          {/* Totals */}
+          {/* Total — only final price, no margin/cost breakdown */}
           <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "16px 20px", marginBottom: 32 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13, color: "#6b7280" }}>
-              <span>Custo dos materiais</span>
-              <span>{formatCurrency(totalCost)}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 13, color: "#6b7280" }}>
-              <span>Margem de serviço ({project.marginPercent}%)</span>
-              <span>{formatCurrency(finalPrice - totalCost)}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 17, fontWeight: 700, color: "#92400e", borderTop: "1px solid #fde68a", paddingTop: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 17, fontWeight: 700, color: "#92400e" }}>
               <span>TOTAL DO SERVIÇO</span>
               <span>{formatCurrency(finalPrice)}</span>
             </div>
