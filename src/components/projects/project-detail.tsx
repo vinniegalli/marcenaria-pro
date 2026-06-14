@@ -26,6 +26,7 @@ import {
   Loader2,
   FileDown,
   Lock,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,6 +90,22 @@ interface BudgetReview {
   itemReviews: BudgetItemReview[];
 }
 
+type WorkStatus = "orcamento" | "aprovado" | "em_producao" | "entregue";
+
+const WORK_STATUS_LABELS: Record<WorkStatus, string> = {
+  orcamento: "Orçamento",
+  aprovado: "Aprovado",
+  em_producao: "Em produção",
+  entregue: "Entregue",
+};
+
+const WORK_STATUS_COLORS: Record<WorkStatus, string> = {
+  orcamento: "bg-gray-100 text-gray-700 border-gray-200",
+  aprovado: "bg-blue-50 text-blue-700 border-blue-200",
+  em_producao: "bg-amber-50 text-amber-700 border-amber-200",
+  entregue: "bg-green-50 text-green-700 border-green-200",
+};
+
 interface Project {
   id: string;
   name: string;
@@ -96,6 +113,7 @@ interface Project {
   date: string;
   marginPercent: number;
   status: string;
+  workStatus: WorkStatus;
   clientId: string;
   totalCost: number;
   finalPrice: number;
@@ -147,6 +165,7 @@ export function ProjectDetail({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [sendingReview, setSendingReview] = useState(false);
   const [confirmingReview, setConfirmingReview] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [supplySearch, setSupplySearch] = useState("");
   const [supplySuggestions, setSupplySuggestions] = useState<
     { id: string; name: string; unitPrice: number }[]
@@ -360,6 +379,22 @@ export function ProjectDetail({
     setTogglingPrice(false);
   }
 
+  async function handleWorkStatusChange(workStatus: WorkStatus) {
+    setUpdatingStatus(true);
+    const res = await fetch(`/api/projects/${project.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workStatus }),
+    });
+    if (res.ok) {
+      setProject((p) => ({ ...p, workStatus }));
+      toast.success(`Status: ${WORK_STATUS_LABELS[workStatus]}`);
+    } else {
+      toast.error("Erro ao atualizar status");
+    }
+    setUpdatingStatus(false);
+  }
+
   async function handleConfirmReview() {
     setConfirmingReview(true);
     try {
@@ -452,9 +487,30 @@ export function ProjectDetail({
           {project.description && (
             <p className="text-gray-500 mt-1 text-sm">{project.description}</p>
           )}
-          <p className="text-xs text-gray-400 mt-1">
-            {formatDate(project.date)}
-          </p>
+          <div className="flex items-center gap-3 mt-2 flex-wrap">
+            <p className="text-xs text-gray-400">{formatDate(project.date)}</p>
+            {/* Pipeline de status */}
+            <div className="flex items-center gap-1">
+              {(["orcamento", "aprovado", "em_producao", "entregue"] as WorkStatus[]).map((s, i, arr) => (
+                <div key={s} className="flex items-center">
+                  <button
+                    onClick={() => !updatingStatus && handleWorkStatusChange(s)}
+                    disabled={updatingStatus}
+                    className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-all cursor-pointer ${
+                      project.workStatus === s
+                        ? WORK_STATUS_COLORS[s] + " ring-2 ring-offset-1 ring-current"
+                        : "bg-gray-50 text-gray-400 border-gray-200 hover:text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    {WORK_STATUS_LABELS[s]}
+                  </button>
+                  {i < arr.length - 1 && (
+                    <ChevronDown className="h-3 w-3 text-gray-300 -rotate-90 mx-0.5" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
         <div className="flex gap-2 shrink-0">
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>

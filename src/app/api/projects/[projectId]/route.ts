@@ -124,6 +124,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         ...(parsed.data.priceVisible !== undefined && {
           priceVisible: parsed.data.priceVisible,
         }),
+        ...(body.workStatus !== undefined && {
+          workStatus: body.workStatus,
+        }),
       },
     });
 
