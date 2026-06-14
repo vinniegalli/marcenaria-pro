@@ -81,6 +81,7 @@ export default async function ProjectDetailPage({
         totalCost,
         finalPrice,
         priceVisible: project.priceVisible,
+        workStatus: (project.workStatus ?? "orcamento") as "orcamento" | "aprovado" | "em_producao" | "entregue",
         date: project.date.toISOString(),
         createdAt: project.createdAt.toISOString(),
         updatedAt: project.updatedAt.toISOString(),
