@@ -17,11 +17,14 @@ export default async function DashboardLayout({
   if (!user) redirect("/login");
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen" style={{ background: "#FAF7F2" }}>
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <MobileHeader />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+        <main
+          className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8"
+          style={{ background: "#FAF7F2" }}
+        >
           {children}
         </main>
       </div>

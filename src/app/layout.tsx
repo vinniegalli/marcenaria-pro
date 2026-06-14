@@ -1,9 +1,19 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 
-const geist = Geist({ subsets: ["latin"] });
+const jakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-jakarta",
+  display: "swap",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "MarcenariaPro",
@@ -16,7 +26,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning className={geist.className}>
+    <html
+      lang="pt-BR"
+      suppressHydrationWarning
+      className={`${jakartaSans.variable} ${fraunces.variable}`}
+    >
       <body>
         <Providers>{children}</Providers>
       </body>

@@ -10,13 +10,11 @@ import {
   LogOut,
   Hammer,
   Menu,
-  X,
   Package,
   MessageSquare,
   Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -61,101 +59,200 @@ export function MobileHeader() {
     router.refresh();
   }
 
+  const userName = user?.user_metadata?.name as string | undefined;
+
   return (
-    <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
-      <div className="flex items-center gap-2">
-        <div className="bg-amber-500 rounded-lg p-1.5">
+    <header
+      className="md:hidden flex items-center justify-between px-4 py-3"
+      style={{
+        background: "#1A1208",
+        borderBottom: "1px solid rgba(192,139,42,0.1)",
+      }}
+    >
+      <div className="flex items-center gap-2.5">
+        <div
+          className="rounded-md p-1.5"
+          style={{ background: "#C08B2A" }}
+        >
           <Hammer className="h-4 w-4 text-white" />
         </div>
-        <span className="font-bold text-base text-gray-900">MarcenariaPro</span>
+        <span
+          className="font-bold text-base"
+          style={{
+            fontFamily: "var(--font-fraunces), serif",
+            color: "#FAF7F2",
+          }}
+        >
+          MarcenariaPro
+        </span>
       </div>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger className="inline-flex items-center justify-center rounded-lg p-2 text-gray-600 hover:bg-gray-100 transition-colors">
+        <SheetTrigger
+          className="inline-flex items-center justify-center rounded-lg p-2 transition-colors"
+          style={{ color: "#9C8A70" }}
+        >
           <Menu className="h-5 w-5" />
         </SheetTrigger>
-        <SheetContent side="right" className="w-72 p-0">
-          <div className="flex items-center justify-between px-6 py-5 border-b">
-            <span className="font-bold text-gray-900">Menu</span>
-            <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
-              <X className="h-4 w-4" />
-            </Button>
+
+        <SheetContent
+          side="right"
+          className="w-72 p-0"
+          style={{ background: "#1A1208", border: "none" }}
+        >
+          {/* Header */}
+          <div
+            className="flex items-center gap-2.5 px-5 py-5"
+            style={{ borderBottom: "1px solid rgba(192,139,42,0.1)" }}
+          >
+            <div
+              className="rounded-md p-1.5 shrink-0"
+              style={{ background: "#C08B2A" }}
+            >
+              <Hammer className="h-4 w-4 text-white" />
+            </div>
+            <span
+              className="font-bold text-base"
+              style={{
+                fontFamily: "var(--font-fraunces), serif",
+                color: "#FAF7F2",
+              }}
+            >
+              MarcenariaPro
+            </span>
           </div>
-          <nav className="px-3 py-4 space-y-1">
-            {baseNavItems.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  pathname === href ||
-                    (href !== "/dashboard" && pathname.startsWith(href))
-                    ? "bg-amber-50 text-amber-700"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </Link>
-            ))}
+
+          {/* Nav */}
+          <nav className="px-3 py-4 space-y-0.5">
+            {baseNavItems.map(({ href, label, icon: Icon }) => {
+              const isActive =
+                pathname === href ||
+                (href !== "/dashboard" && pathname.startsWith(href));
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
+                  )}
+                  style={
+                    isActive
+                      ? {
+                          background: "rgba(192,139,42,0.1)",
+                          color: "#C08B2A",
+                          borderLeft: "2px solid #C08B2A",
+                          paddingLeft: "calc(0.75rem - 2px)",
+                        }
+                      : { color: "#9C8A70" }
+                  }
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {label}
+                </Link>
+              );
+            })}
+
             {userPlan === "pro" && (
               <>
-                <div className="px-3 pt-3 pb-1">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pro</p>
+                <div className="px-3 pt-5 pb-2">
+                  <p
+                    className="text-xs font-semibold uppercase tracking-widest"
+                    style={{ color: "rgba(192,139,42,0.5)" }}
+                  >
+                    Pro
+                  </p>
                 </div>
+
                 <Link
                   href="/dashboard/quote-requests"
                   onClick={() => setOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    pathname === "/dashboard/quote-requests" || pathname.startsWith("/dashboard/quote-requests")
-                      ? "bg-amber-50 text-amber-700"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                  )}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
+                  style={
+                    pathname.startsWith("/dashboard/quote-requests")
+                      ? {
+                          background: "rgba(192,139,42,0.1)",
+                          color: "#C08B2A",
+                          borderLeft: "2px solid #C08B2A",
+                          paddingLeft: "calc(0.75rem - 2px)",
+                        }
+                      : { color: "#9C8A70" }
+                  }
                 >
-                  <MessageSquare className="h-4 w-4" />
+                  <MessageSquare className="h-4 w-4 shrink-0" />
                   <span className="flex-1">Solicitações</span>
                   {pendingCount > 0 && (
                     <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
                       {pendingCount}
                     </span>
                   )}
-                  <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-semibold">Beta</span>
+                  <span
+                    className="text-xs font-bold px-1.5 py-0.5 rounded"
+                    style={{
+                      background: "rgba(192,139,42,0.15)",
+                      color: "#C08B2A",
+                      fontSize: "0.65rem",
+                    }}
+                  >
+                    Beta
+                  </span>
                 </Link>
+
                 <Link
                   href="/dashboard/profile-public"
                   onClick={() => setOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    pathname === "/dashboard/profile-public" || pathname.startsWith("/dashboard/profile-public")
-                      ? "bg-amber-50 text-amber-700"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                  )}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
+                  style={
+                    pathname.startsWith("/dashboard/profile-public")
+                      ? {
+                          background: "rgba(192,139,42,0.1)",
+                          color: "#C08B2A",
+                          borderLeft: "2px solid #C08B2A",
+                          paddingLeft: "calc(0.75rem - 2px)",
+                        }
+                      : { color: "#9C8A70" }
+                  }
                 >
-                  <Globe className="h-4 w-4" />
+                  <Globe className="h-4 w-4 shrink-0" />
                   <span className="flex-1">Perfil Público</span>
-                  <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-semibold">Beta</span>
+                  <span
+                    className="text-xs font-bold px-1.5 py-0.5 rounded"
+                    style={{
+                      background: "rgba(192,139,42,0.15)",
+                      color: "#C08B2A",
+                      fontSize: "0.65rem",
+                    }}
+                  >
+                    Beta
+                  </span>
                 </Link>
               </>
             )}
           </nav>
-          <div className="px-3 py-4 border-t absolute bottom-0 w-full">
-            <div className="px-3 py-2 mb-2">
-              <p className="text-sm font-medium truncate">
-                {user?.user_metadata?.name ?? user?.email}
+
+          {/* User footer */}
+          <div
+            className="px-3 py-4 absolute bottom-0 w-full"
+            style={{ borderTop: "1px solid rgba(192,139,42,0.1)" }}
+          >
+            <div className="px-3 py-2 mb-1">
+              <p className="text-sm font-medium truncate" style={{ color: "#FAF7F2" }}>
+                {userName ?? user?.email}
               </p>
-              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              {userName && (
+                <p className="text-xs truncate" style={{ color: "#9C8A70" }}>
+                  {user?.email}
+                </p>
+              )}
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start text-gray-600 hover:text-red-600"
+            <button
               onClick={handleSignOut}
+              className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:text-red-400"
+              style={{ color: "#9C8A70" }}
             >
-              <LogOut className="h-4 w-4 mr-2" />
+              <LogOut className="h-4 w-4" />
               Sair
-            </Button>
+            </button>
           </div>
         </SheetContent>
       </Sheet>
