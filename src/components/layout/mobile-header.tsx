@@ -12,6 +12,8 @@ import {
   Menu,
   X,
   Package,
+  MessageSquare,
+  Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -19,11 +21,16 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
-const navItems = [
+const baseNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/clients", label: "Clientes", icon: Users },
   { href: "/dashboard/supply-items", label: "Itens de Uso", icon: Package },
   { href: "/dashboard/settings", label: "Configurações", icon: Settings },
+];
+
+const proNavItems = [
+  { href: "/dashboard/quote-requests", label: "Solicitações", icon: MessageSquare },
+  { href: "/dashboard/profile-public", label: "Perfil Público", icon: Globe },
 ];
 
 export function MobileHeader() {
@@ -31,10 +38,12 @@ export function MobileHeader() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [userPlan, setUserPlan] = useState<string>("free");
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    fetch("/api/profile").then((r) => r.json()).then((d) => setUserPlan(d?.plan ?? "free")).catch(() => {});
   }, []);
 
   async function handleSignOut() {
@@ -65,7 +74,7 @@ export function MobileHeader() {
             </Button>
           </div>
           <nav className="px-3 py-4 space-y-1">
-            {navItems.map(({ href, label, icon: Icon }) => (
+            {baseNavItems.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
                 href={href}
@@ -82,6 +91,29 @@ export function MobileHeader() {
                 {label}
               </Link>
             ))}
+            {userPlan === "pro" && (
+              <>
+                <div className="px-3 pt-3 pb-1">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pro</p>
+                </div>
+                {proNavItems.map(({ href, label, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      pathname === href || pathname.startsWith(href)
+                        ? "bg-amber-50 text-amber-700"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </Link>
+                ))}
+              </>
+            )}
           </nav>
           <div className="px-3 py-4 border-t absolute bottom-0 w-full">
             <div className="px-3 py-2 mb-2">

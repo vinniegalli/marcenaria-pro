@@ -19,9 +19,11 @@ model User {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  clients      Client[]
-  projects     Project[]
-  supplyItems  SupplyItem[]
+  clients        Client[]
+  projects       Project[]
+  supplyItems    SupplyItem[]
+  publicProfile  PublicProfile?
+  quoteRequests  QuoteRequest[] @relation("CarpenterQuotes")
 
   @@index([email])
   @@index([username])
@@ -136,6 +138,59 @@ model BudgetItemReview {
   @@unique([budgetReviewId, costItemId])
   @@index([budgetReviewId])
   @@index([costItemId])
+}
+
+model PublicProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  bio         String?
+  city        String?
+  serviceArea String?
+  photoUrl    String?
+  avatarPath  String?
+  whatsapp    String?
+  instagram   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model QuoteRequest {
+  id           String    @id @default(cuid())
+  carpenterId  String
+  clientName   String
+  clientEmail  String
+  clientPhone  String?
+  location     String    // cozinha | banheiro | sala | quarto | escritorio | varanda | outro
+  dimensions   String?
+  description  String
+  deadline     String    // urgente | 1_mes | 2_3_meses | sem_pressa
+  status       String    @default("pending") // pending | responded
+  priceMin     Float?
+  priceMax     Float?
+  responseNote String?
+  validDays    Int?
+  respondedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  carpenter User                @relation("CarpenterQuotes", fields: [carpenterId], references: [id], onDelete: Cascade)
+  photos    QuoteRequestPhoto[]
+
+  @@index([carpenterId])
+}
+
+model QuoteRequestPhoto {
+  id             String   @id @default(cuid())
+  quoteRequestId String
+  url            String
+  storagePath    String
+  createdAt      DateTime @default(now())
+
+  quoteRequest QuoteRequest @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+
+  @@index([quoteRequestId])
 }
 
 model SupplyItem {
