@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { CheckoutButton } from "@/components/pricing/checkout-button";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Planos e Preços — MarcenariaPro",
   description: "Escolha o plano ideal para a sua marcenaria.",
@@ -117,8 +119,8 @@ const faqs = [
     a: "Sim. O upgrade é imediato e todos os seus projetos, clientes e histórico são mantidos.",
   },
   {
-    q: "O PDF do orçamento está disponível agora?",
-    a: "Em breve! Está na nossa roadmap para os próximos meses como feature exclusiva dos planos Starter e Pro.",
+    q: "O PDF do orçamento já está disponível?",
+    a: "Sim! O PDF do orçamento já está disponível para os planos Starter e Pro. Com um clique você gera um documento profissional com todos os itens, valores e dados do cliente.",
   },
 ];
 
@@ -310,16 +312,8 @@ export default function PricingPage() {
             <div className="grid sm:grid-cols-2 gap-4 text-left">
               {[
                 {
-                  title: "PDF do orçamento",
-                  desc: "Exporte o projeto completo em PDF com logo, fotos e valores.",
-                },
-                {
                   title: "Assinatura digital",
                   desc: "O cliente aprova o orçamento com assinatura direto no link.",
-                },
-                {
-                  title: "Notificações WhatsApp",
-                  desc: "Alerta quando o cliente responde a revisão.",
                 },
                 {
                   title: "Status de etapas",
@@ -332,6 +326,14 @@ export default function PricingPage() {
                 {
                   title: "Integração de pagamento",
                   desc: "Gere link de pagamento de sinal direto do orçamento.",
+                },
+                {
+                  title: "App mobile PWA",
+                  desc: "Acesse e gerencie seus projetos direto pelo celular.",
+                },
+                {
+                  title: "Relatórios financeiros",
+                  desc: "Receita por mês, ticket médio e margem média.",
                 },
               ].map((item) => (
                 <div

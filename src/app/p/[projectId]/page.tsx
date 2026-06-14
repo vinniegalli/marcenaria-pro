@@ -4,13 +4,18 @@ import { formatCurrency } from "@/lib/utils";
 import { Hammer, Calendar } from "lucide-react";
 import { PublicGallery } from "@/components/public/public-gallery";
 import { BudgetReviewForm } from "@/components/public/budget-review-form";
+import { PrintTrigger } from "@/components/public/print-trigger";
 
 export default async function PublicProjectPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ projectId: string }>;
+  searchParams: Promise<{ print?: string }>;
 }) {
   const { projectId } = await params;
+  const { print } = await searchParams;
+  const isPrint = print === "1";
 
   const project = await prisma.project.findUnique({
     where: { id: projectId, status: "active" },
@@ -57,6 +62,102 @@ export default async function PublicProjectPage({
 
   // Static price is hidden only while the interactive form is shown
   const showStaticPrice = project.priceVisible && !showReview;
+
+  if (isPrint) {
+    return (
+      <>
+        <PrintTrigger />
+        <style>{`
+          @media print {
+            @page { margin: 20mm; size: A4; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print { display: none !important; }
+          }
+          body { font-family: sans-serif; color: #111; background: #fff; }
+        `}</style>
+        <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 24px" }}>
+          {/* Print Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32, paddingBottom: 16, borderBottom: "2px solid #f59e0b" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <div style={{ background: "#f59e0b", borderRadius: 6, padding: "4px 8px" }}>
+                  <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>MarcenariaPro</span>
+                </div>
+              </div>
+              <p style={{ fontSize: 22, fontWeight: 700, margin: "8px 0 2px" }}>{project.user.name}</p>
+              {project.user.phone && <p style={{ color: "#6b7280", fontSize: 13 }}>{project.user.phone}</p>}
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <p style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 1 }}>Orçamento</p>
+              <p style={{ fontSize: 13, color: "#374151", marginTop: 2 }}>
+                {new Intl.DateTimeFormat("pt-BR").format(new Date(project.date))}
+              </p>
+            </div>
+          </div>
+
+          {/* Client + Project */}
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Cliente</p>
+            <p style={{ fontSize: 18, fontWeight: 700, margin: "0 0 4px" }}>{project.client.name}</p>
+            <p style={{ fontSize: 16, color: "#374151", margin: 0 }}>{project.name}</p>
+            {project.description && <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>{project.description}</p>}
+          </div>
+
+          {/* Cost Items Table */}
+          <div style={{ marginBottom: 24 }}>
+            <p style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Itens do orçamento</p>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: "#f9fafb" }}>
+                  <th style={{ textAlign: "left", padding: "8px 12px", borderBottom: "1px solid #e5e7eb", fontWeight: 600, color: "#374151" }}>Item</th>
+                  <th style={{ textAlign: "left", padding: "8px 12px", borderBottom: "1px solid #e5e7eb", fontWeight: 600, color: "#374151" }}>Categoria</th>
+                  <th style={{ textAlign: "right", padding: "8px 12px", borderBottom: "1px solid #e5e7eb", fontWeight: 600, color: "#374151" }}>Qtd</th>
+                  <th style={{ textAlign: "right", padding: "8px 12px", borderBottom: "1px solid #e5e7eb", fontWeight: 600, color: "#374151" }}>Unitário</th>
+                  <th style={{ textAlign: "right", padding: "8px 12px", borderBottom: "1px solid #e5e7eb", fontWeight: 600, color: "#374151" }}>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {project.costItems.map((item, idx) => {
+                  const effectivePrice = item.activeOption === "alternative" && item.altUnitPrice != null ? item.altUnitPrice : item.unitPrice;
+                  const effectiveName = item.activeOption === "alternative" && item.altName ? item.altName : item.name;
+                  return (
+                    <tr key={item.id} style={{ background: idx % 2 === 0 ? "#fff" : "#f9fafb" }}>
+                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #f3f4f6" }}>{effectiveName}</td>
+                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #f3f4f6", color: "#6b7280" }}>{item.category ?? "—"}</td>
+                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #f3f4f6", textAlign: "right" }}>{item.quantity}</td>
+                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #f3f4f6", textAlign: "right" }}>{formatCurrency(effectivePrice)}</td>
+                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #f3f4f6", textAlign: "right", fontWeight: 600 }}>{formatCurrency(item.quantity * effectivePrice)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Totals */}
+          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "16px 20px", marginBottom: 32 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13, color: "#6b7280" }}>
+              <span>Custo dos materiais</span>
+              <span>{formatCurrency(totalCost)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 13, color: "#6b7280" }}>
+              <span>Margem de serviço ({project.marginPercent}%)</span>
+              <span>{formatCurrency(finalPrice - totalCost)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 17, fontWeight: 700, color: "#92400e", borderTop: "1px solid #fde68a", paddingTop: 10 }}>
+              <span>TOTAL DO SERVIÇO</span>
+              <span>{formatCurrency(finalPrice)}</span>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 16, textAlign: "center", color: "#9ca3af", fontSize: 11 }}>
+            <p>Orçamento gerado por MarcenariaPro · marcenariaproo.com.br</p>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

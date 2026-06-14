@@ -24,6 +24,8 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
+  FileDown,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -118,9 +120,11 @@ const CATEGORIES = [
 export function ProjectDetail({
   project: initialProject,
   username,
+  userPlan = "free",
 }: {
   project: Project;
   username: string;
+  userPlan?: string;
 }) {
   const router = useRouter();
   const [project, setProject] = useState(initialProject);
@@ -452,7 +456,28 @@ export function ProjectDetail({
             {formatDate(project.date)}
           </p>
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+          {userPlan === "free" ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-gray-400 border-gray-200 cursor-not-allowed"
+              title="Disponível no plano Starter"
+              onClick={() => { window.location.href = "/pricing"; }}
+            >
+              <Lock className="h-3.5 w-3.5 mr-1" />
+              PDF
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(`/p/${project.id}?print=1`, "_blank")}
+            >
+              <FileDown className="h-4 w-4 mr-1" />
+              Exportar PDF
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="h-4 w-4 mr-1" />
             Editar

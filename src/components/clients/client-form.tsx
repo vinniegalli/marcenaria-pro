@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,13 +50,19 @@ export function ClientForm({
 
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.error);
+        if (res.status === 403) {
+          toast.error(json.error, {
+            action: { label: "Fazer upgrade", onClick: () => { window.location.href = "/pricing"; } },
+          });
+        } else {
+          toast.error(json.error ?? "Erro ao salvar cliente");
+        }
+        return;
       }
 
       onSuccess();
-    } catch (err) {
-      const error = err as Error;
-      alert(error.message ?? "Erro ao salvar cliente");
+    } catch {
+      toast.error("Erro ao salvar cliente");
     } finally {
       setLoading(false);
     }

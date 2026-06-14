@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized } from "@/lib/api-helpers";
+import { sendReviewConfirmedEmail } from "@/lib/email";
 
 const budgetReviewInclude = {
   itemReviews: {
@@ -102,7 +103,10 @@ export async function PUT(
 
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId: session.user.id },
-    select: { id: true },
+    include: {
+      client: { select: { name: true, email: true } },
+      user: { select: { name: true, phone: true } },
+    },
   });
   if (!project)
     return NextResponse.json(
@@ -119,6 +123,23 @@ export async function PUT(
       { status: 400 },
     );
 
+  // Persist the client's selected option back to each cost item
+  const itemReviews = await prisma.budgetItemReview.findMany({
+    where: { budgetReviewId: review.id },
+    select: { costItemId: true, selectedOption: true },
+  });
+
+  await Promise.all(
+    itemReviews
+      .filter((ir) => ir.selectedOption)
+      .map((ir) =>
+        prisma.costItem.update({
+          where: { id: ir.costItemId },
+          data: { activeOption: ir.selectedOption },
+        }),
+      ),
+  );
+
   const confirmed = await prisma.budgetReview.update({
     where: { projectId },
     data: { status: "confirmed" },
@@ -126,6 +147,18 @@ export async function PUT(
       ...budgetReviewInclude,
     },
   });
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://marcenariaproo.com.br";
+  if (project.client.email) {
+    sendReviewConfirmedEmail({
+      to: project.client.email,
+      clientName: project.client.name,
+      carpenterName: project.user.name ?? "",
+      carpenterPhone: project.user.phone,
+      projectName: project.name,
+      projectUrl: `${appUrl}/p/${projectId}`,
+    }).catch(() => {});
+  }
 
   return NextResponse.json({ review: confirmed });
 }

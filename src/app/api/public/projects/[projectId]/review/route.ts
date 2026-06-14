@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { sendReviewSubmittedEmail } from "@/lib/email";
 
 const reviewSubmitSchema = z.object({
   items: z.array(
@@ -30,7 +31,10 @@ export async function POST(
 
     const project = await prisma.project.findUnique({
       where: { id: projectId, status: "active" },
-      select: { id: true },
+      include: {
+        client: { select: { name: true } },
+        user: { select: { email: true, name: true } },
+      },
     });
     if (!project) {
       return NextResponse.json(
@@ -99,6 +103,15 @@ export async function POST(
       where: { id: budgetReview.id },
       data: { status: "submitted", submittedAt: new Date() },
     });
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://marcenariaproo.com.br";
+    sendReviewSubmittedEmail({
+      to: project.user.email,
+      carpenterName: project.user.name ?? project.user.email,
+      clientName: project.client.name,
+      projectName: project.name,
+      projectUrl: `${appUrl}/dashboard/clients/${project.clientId}/projects/${project.id}`,
+    }).catch(() => {});
 
     return NextResponse.json({ success: true });
   } catch {

@@ -66,12 +66,14 @@ export default async function ProjectDetailPage({
 
   const dbUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { username: true },
+    select: { username: true, plan: true },
   });
   const username = dbUser?.username ?? "";
+  const userPlan = dbUser?.plan ?? "free";
 
   return (
     <ProjectDetail
+      userPlan={userPlan}
       project={{
         ...project,
         costItems: costItemsWithTotal,
