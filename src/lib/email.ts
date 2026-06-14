@@ -4,6 +4,10 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
+if (!process.env.RESEND_API_KEY) {
+  console.warn("[email] RESEND_API_KEY não configurada — emails desabilitados");
+}
+
 const FROM = process.env.RESEND_FROM ?? "MarcenariaPro <noreply@marcenariaproo.com.br>";
 
 export async function sendReviewSubmittedEmail({

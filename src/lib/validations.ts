@@ -67,6 +67,19 @@ export const profileSchema = z.object({
   phone: z.string().optional(),
 });
 
+const RESERVED_USERNAMES = new Set([
+  "api", "dashboard", "admin", "login", "register", "pricing", "p",
+  "settings", "profile", "about", "help", "terms", "privacy", "blog",
+  "app", "www", "mail", "support", "conta", "perfil", "solicitar",
+]);
+
+export const usernameSchema = z
+  .string()
+  .min(3, "Mínimo 3 caracteres")
+  .max(30, "Máximo 30 caracteres")
+  .regex(/^[a-z0-9][a-z0-9._-]*$/, "Apenas letras minúsculas, números, ponto, _ e -")
+  .refine((v) => !RESERVED_USERNAMES.has(v), "Este nome de usuário não está disponível");
+
 export const supplyItemSchema = z.object({
   name: z.string().min(1, "Informe o nome do item"),
   category: z.string().optional(),

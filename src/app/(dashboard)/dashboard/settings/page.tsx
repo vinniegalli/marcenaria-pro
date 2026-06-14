@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   ArrowUpRight,
   Zap,
+  XCircle,
 } from "lucide-react";
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,10 @@ export default function SettingsPage() {
   const [passLoading, setPassLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [usernameInput, setUsernameInput] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [usernameError, setUsernameError] = useState("");
+  const usernameDebounceRef = useState<ReturnType<typeof setTimeout> | null>(null);
 
   const currentPlan = (profile?.plan ?? "free") as PlanId;
 
@@ -76,23 +81,50 @@ export default function SettingsPage() {
       : undefined,
   });
 
+  function handleUsernameChange(value: string) {
+    const lower = value.toLowerCase();
+    setUsernameInput(lower);
+
+    if (usernameDebounceRef[0]) clearTimeout(usernameDebounceRef[0]);
+    if (!lower) { setUsernameStatus("idle"); return; }
+
+    setUsernameStatus("checking");
+    usernameDebounceRef[0] = setTimeout(async () => {
+      const res = await fetch(`/api/profile?checkUsername=${encodeURIComponent(lower)}`);
+      const json = await res.json();
+      if (json.error) {
+        setUsernameStatus("invalid");
+        setUsernameError(json.error);
+      } else {
+        setUsernameStatus(json.available ? "available" : "taken");
+        setUsernameError(json.available ? "" : "Este nome de usuário já está em uso");
+      }
+    }, 500);
+  }
+
   const passForm = useForm<PasswordData>({
     resolver: zodResolver(changePasswordSchema),
   });
 
   async function onProfileSubmit(data: ProfileData) {
+    if (usernameStatus === "taken" || usernameStatus === "invalid") {
+      toast.error(usernameError || "Nome de usuário inválido");
+      return;
+    }
     setProfileLoading(true);
     try {
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, username: usernameInput || undefined }),
       });
       if (!res.ok) {
         const json = await res.json();
         toast.error(json.error);
         return;
       }
+      setUsernameInput("");
+      setUsernameStatus("idle");
       mutate();
       toast.success("Perfil atualizado!");
     } finally {
@@ -341,9 +373,14 @@ export default function SettingsPage() {
           {profile && (
             <CardDescription>
               Seu link público:{" "}
-              <span className="font-mono text-amber-600">
+              <a
+                href={`/${profile.username}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-amber-600 hover:underline"
+              >
                 /{profile.username}
-              </span>
+              </a>
             </CardDescription>
           )}
         </CardHeader>
@@ -381,6 +418,41 @@ export default function SettingsPage() {
                 placeholder="(11) 99999-9999"
                 {...profileForm.register("phone")}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="username">
+                Nome de usuário (URL pública)
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                  /
+                </span>
+                <Input
+                  id="username"
+                  className="pl-6 pr-8"
+                  placeholder={profile?.username ?? "seu-usuario"}
+                  value={usernameInput}
+                  onChange={(e) => handleUsernameChange(e.target.value)}
+                />
+                {usernameStatus === "checking" && (
+                  <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                )}
+                {usernameStatus === "available" && (
+                  <CheckCircle2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                )}
+                {(usernameStatus === "taken" || usernameStatus === "invalid") && (
+                  <XCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-red-500" />
+                )}
+              </div>
+              {usernameStatus === "available" && (
+                <p className="text-xs text-green-600">Disponível!</p>
+              )}
+              {(usernameStatus === "taken" || usernameStatus === "invalid") && (
+                <p className="text-xs text-red-500">{usernameError}</p>
+              )}
+              <p className="text-xs text-gray-400">
+                Deixe em branco para manter o atual. Apenas letras minúsculas, números, . _ e -
+              </p>
             </div>
             <Button
               type="submit"
