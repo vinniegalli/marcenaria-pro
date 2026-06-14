@@ -34,7 +34,7 @@ export default async function CarpenterPublicProfile({
           <div className="bg-amber-500 rounded-lg p-1.5">
             <Hammer className="h-4 w-4 text-white" />
           </div>
-          <span className="font-bold text-sm text-gray-900">MarcenariaPro</span>
+          <span className="font-bold text-sm text-gray-900">Projetta</span>
         </div>
       </header>
 
@@ -122,7 +122,7 @@ export default async function CarpenterPublicProfile({
         )}
 
         <div className="text-center text-xs text-gray-400 pb-4">
-          <p>Perfil gerado por MarcenariaPro</p>
+          <p>Perfil gerado por Projetta</p>
         </div>
       </main>
     </div>

@@ -15,7 +15,7 @@ import { CheckoutButton } from "@/components/pricing/checkout-button";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Planos e Preços — MarcenariaPro",
+  title: "Planos e Preços — Projetta",
   description: "Escolha o plano ideal para a sua marcenaria.",
 };
 
@@ -136,7 +136,7 @@ export default function PricingPage() {
               <Hammer className="h-5 w-5 text-white" />
             </div>
             <span className="font-bold text-gray-900 text-lg">
-              MarcenariaPro
+              Projetta
             </span>
           </Link>
           <div className="flex items-center gap-3">
@@ -347,10 +347,10 @@ export default function PricingPage() {
             <div className="bg-amber-500 rounded-lg p-1">
               <Hammer className="h-4 w-4 text-white" />
             </div>
-            <span className="font-semibold text-white">MarcenariaPro</span>
+            <span className="font-semibold text-white">Projetta</span>
           </div>
           <p className="text-sm">
-            © {new Date().getFullYear()} MarcenariaPro. Todos os direitos
+            © {new Date().getFullYear()} Projetta. Todos os direitos
             reservados.
           </p>
           <div className="flex gap-4 text-sm">

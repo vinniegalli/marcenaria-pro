@@ -8,7 +8,6 @@ import {
   Users,
   Settings,
   LogOut,
-  Hammer,
   Package,
   MessageSquare,
   Globe,
@@ -109,23 +108,18 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div
-        className="flex items-center gap-2.5 px-5 py-5"
+        className="px-5 py-5"
         style={{ borderBottom: "1px solid rgba(192,139,42,0.1)" }}
       >
-        <div
-          className="rounded-md p-1.5 shrink-0"
-          style={{ background: "#C08B2A" }}
-        >
-          <Hammer className="h-4 w-4 text-white" />
-        </div>
         <span
-          className="font-bold text-base tracking-tight"
+          className="text-xl tracking-tight"
           style={{
             fontFamily: "var(--font-fraunces), serif",
+            fontStyle: "italic",
             color: "#FAF7F2",
           }}
         >
-          MarcenariaPro
+          Projetta
         </span>
       </div>
 

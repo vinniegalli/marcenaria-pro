@@ -137,7 +137,7 @@ export default function ResetPasswordPage() {
         <div className="bg-amber-500 rounded-lg p-2">
           <Hammer className="h-5 w-5 text-white" />
         </div>
-        <span className="text-xl font-bold text-gray-900">MarcenariaPro</span>
+        <span className="text-xl font-bold text-gray-900">Projetta</span>
       </div>
       <ResetPasswordForm />
     </div>

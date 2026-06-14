@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
-  Hammer,
   CheckCircle2,
   Users,
   FolderOpen,
@@ -38,23 +37,16 @@ export default async function Home() {
         }}
       >
         <div className="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="rounded-md p-1.5"
-              style={{ background: "#C08B2A" }}
-            >
-              <Hammer className="h-4 w-4 text-white" />
-            </div>
-            <span
-              className="font-bold text-lg tracking-tight"
-              style={{
-                fontFamily: "var(--font-fraunces), serif",
-                color: "#FAF7F2",
-              }}
-            >
-              MarcenariaPro
-            </span>
-          </div>
+          <span
+            className="text-2xl"
+            style={{
+              fontFamily: "var(--font-fraunces), serif",
+              fontStyle: "italic",
+              color: "#FAF7F2",
+            }}
+          >
+            Projetta
+          </span>
 
           <nav className="hidden md:flex items-center gap-8 text-sm">
             <a
@@ -698,25 +690,18 @@ export default async function Home() {
         style={{ background: "#140E06" }}
       >
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-5">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="rounded-md p-1.5"
-              style={{ background: "#C08B2A" }}
-            >
-              <Hammer className="h-4 w-4 text-white" />
-            </div>
-            <span
-              className="font-bold text-base"
-              style={{
-                fontFamily: "var(--font-fraunces), serif",
-                color: "#FAF7F2",
-              }}
-            >
-              MarcenariaPro
-            </span>
-          </div>
+          <span
+            className="text-xl"
+            style={{
+              fontFamily: "var(--font-fraunces), serif",
+              fontStyle: "italic",
+              color: "#FAF7F2",
+            }}
+          >
+            Projetta
+          </span>
           <p className="text-xs" style={{ color: "#9C8A70" }}>
-            © {new Date().getFullYear()} MarcenariaPro. Todos os direitos reservados.
+            © {new Date().getFullYear()} Projetta. Todos os direitos reservados.
           </p>
           <div className="flex gap-6 text-sm">
             {[

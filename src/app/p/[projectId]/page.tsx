@@ -85,7 +85,7 @@ export default async function PublicProjectPage({
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                 <div style={{ background: "#f59e0b", borderRadius: 6, padding: "4px 8px" }}>
-                  <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>MarcenariaPro</span>
+                  <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>Projetta</span>
                 </div>
               </div>
               <p style={{ fontSize: 22, fontWeight: 700, margin: "8px 0 2px" }}>{project.user.name}</p>
@@ -143,7 +143,7 @@ export default async function PublicProjectPage({
 
           {/* Footer */}
           <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 16, textAlign: "center", color: "#9ca3af", fontSize: 11 }}>
-            <p>Orçamento gerado por MarcenariaPro · marcenariaproo.com.br</p>
+            <p>Orçamento gerado por Projetta · marcenariaproo.com.br</p>
           </div>
         </div>
       </>
@@ -266,7 +266,7 @@ export default async function PublicProjectPage({
           {project.user.phone && (
             <p className="mb-1">📞 {project.user.phone}</p>
           )}
-          <p>Orçamento gerado por MarcenariaPro</p>
+          <p>Orçamento gerado por Projetta</p>
         </div>
       </main>
     </div>

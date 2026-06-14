@@ -38,7 +38,7 @@ export default async function QuoteRequestPage({
           <div className="bg-amber-500 rounded-lg p-1.5">
             <Hammer className="h-4 w-4 text-white" />
           </div>
-          <span className="font-bold text-sm text-gray-900">MarcenariaPro</span>
+          <span className="font-bold text-sm text-gray-900">Projetta</span>
         </div>
       </header>
 
@@ -62,7 +62,7 @@ export default async function QuoteRequestPage({
         </div>
 
         <div className="text-center text-xs text-gray-400 py-6">
-          <p>Serviço oferecido por MarcenariaPro</p>
+          <p>Serviço oferecido por Projetta</p>
         </div>
       </main>
     </div>

@@ -62,7 +62,7 @@ export default function LoginPage() {
             <Hammer className="h-7 w-7 text-white" />
           </div>
         </div>
-        <CardTitle className="text-2xl">MarcenariaPro</CardTitle>
+        <CardTitle className="text-2xl">Projetta</CardTitle>
         <CardDescription>Entre na sua conta para continuar</CardDescription>
       </CardHeader>
       <CardContent>

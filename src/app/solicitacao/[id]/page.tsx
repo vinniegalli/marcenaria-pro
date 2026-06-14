@@ -38,7 +38,7 @@ export default async function SolicitacaoPublicPage({
           <div className="bg-amber-500 rounded-lg p-1.5">
             <Hammer className="h-4 w-4 text-white" />
           </div>
-          <span className="font-bold text-sm text-gray-900">MarcenariaPro</span>
+          <span className="font-bold text-sm text-gray-900">Projetta</span>
         </div>
       </header>
 
@@ -157,7 +157,7 @@ export default async function SolicitacaoPublicPage({
         <div className="text-center text-xs text-gray-400 py-4">
           Serviço oferecido por{" "}
           <Link href="/" className="hover:underline">
-            MarcenariaPro
+            Projetta
           </Link>
         </div>
       </main>

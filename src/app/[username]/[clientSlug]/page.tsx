@@ -207,7 +207,7 @@ export default async function PublicClientPage({
         {/* Footer */}
         <div className="text-center text-xs text-gray-400 pb-4">
           {user.phone && <p className="mb-1">📞 {user.phone}</p>}
-          <p>Orçamento gerado por MarcenariaPro</p>
+          <p>Orçamento gerado por Projetta</p>
         </div>
       </main>
     </div>

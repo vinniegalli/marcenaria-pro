@@ -8,7 +8,6 @@ import {
   Users,
   Settings,
   LogOut,
-  Hammer,
   Menu,
   Package,
   MessageSquare,
@@ -69,23 +68,16 @@ export function MobileHeader() {
         borderBottom: "1px solid rgba(192,139,42,0.1)",
       }}
     >
-      <div className="flex items-center gap-2.5">
-        <div
-          className="rounded-md p-1.5"
-          style={{ background: "#C08B2A" }}
-        >
-          <Hammer className="h-4 w-4 text-white" />
-        </div>
-        <span
-          className="font-bold text-base"
-          style={{
-            fontFamily: "var(--font-fraunces), serif",
-            color: "#FAF7F2",
-          }}
-        >
-          MarcenariaPro
-        </span>
-      </div>
+      <span
+        className="text-xl"
+        style={{
+          fontFamily: "var(--font-fraunces), serif",
+          fontStyle: "italic",
+          color: "#FAF7F2",
+        }}
+      >
+        Projetta
+      </span>
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger
@@ -102,23 +94,18 @@ export function MobileHeader() {
         >
           {/* Header */}
           <div
-            className="flex items-center gap-2.5 px-5 py-5"
+            className="px-5 py-5"
             style={{ borderBottom: "1px solid rgba(192,139,42,0.1)" }}
           >
-            <div
-              className="rounded-md p-1.5 shrink-0"
-              style={{ background: "#C08B2A" }}
-            >
-              <Hammer className="h-4 w-4 text-white" />
-            </div>
             <span
-              className="font-bold text-base"
+              className="text-xl"
               style={{
                 fontFamily: "var(--font-fraunces), serif",
+                fontStyle: "italic",
                 color: "#FAF7F2",
               }}
             >
-              MarcenariaPro
+              Projetta
             </span>
           </div>
 

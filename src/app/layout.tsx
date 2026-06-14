@@ -16,8 +16,8 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "MarcenariaPro",
-  description: "Gerenciamento profissional de projetos de marcenaria",
+  title: "Projetta",
+  description: "Gerencie projetos e orçamentos da sua marcenaria com profissionalismo.",
 };
 
 export default function RootLayout({
